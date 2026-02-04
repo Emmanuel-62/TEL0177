@@ -1,6 +1,6 @@
 # Librairie TEL0177
 
-## Structure la librairie TEl0177
+## Structure de la librairie TEl0177
 ```text
 TEL0177/
 ├── src/
