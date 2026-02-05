@@ -16,4 +16,8 @@
 #define TEL0177_DEFAULT_BAUD            115200
 
 
+#define TEL0177_LOG(x)      Serial.print(x)
+#define TEL0177_LOGLN(x)    Serial.println(x)
+
+
 #endif //TEL0177_CONFIG_H

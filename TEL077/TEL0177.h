@@ -8,11 +8,13 @@
 
 class TEL0177 {
   private:
-    Stream & _serial;
     TEL0177_AT _at;
 
   public:
     TEL0177(Stream &);
+
+    bool test();
+
 };
 
 #endif //TEL0177_H
