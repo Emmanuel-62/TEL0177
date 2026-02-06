@@ -66,6 +66,10 @@ void TEL0177_AT::clearBuffer(){
   }
 }
 
+
+// ============================================
+// COMMANDES AT DE BASE
+// ============================================
 bool TEL0177_AT::test(){
   String response = sendCommand("AT");
   return response.indexOf("OK");
@@ -79,4 +83,38 @@ bool TEL0177_AT::reset(){
 bool TEL0177_AT::factoryReset(){
   String response = sendCommand("AT+RSTSET");
   return response.indexOf("OK");
+}
+
+
+// ============================================
+// INFORMATION MODULE
+// ============================================
+String TEL0177_AT::getManufacturer(){
+  String response = sendCommand("AT+CGMI");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getModel(){
+  String response = sendCommand("AT+CGMM");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getFirmwareVersion(){
+  String response = sendCommand("AT+CGMR");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getIMEI(){
+  String response = sendCommand("AT+CGSN");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getICCID(){
+  String response = sendCommand("AT+CCID");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getIMSI(){
+  String response = sendCommand("AT+CIMI");
+  return parseFirstLine(response);
 }
