@@ -5,7 +5,7 @@ TEL0177_AT::TEL0177_AT(Stream & serial): _serial(serial){}
 // ============================================
 // COMMANDES AT DE BASE
 // ============================================
-String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t timout){
+String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t timeout){
   TEL0177_LOGLN("Commande send ===> " + String(cmd));           
 
   clearBuffer();
@@ -22,11 +22,11 @@ String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t t
       char c = _serial.read();
       response += c;
 
-      if(response.indefOf(expected) >= 0){
+      if(response.indexOf(expected) >= 0){
         TEL0177_LOGLN("<<< " + response);
         return response;
       }
-      if(response.indefOf("ERROR") >= 0){
+      if(response.indexOf("ERROR") >= 0){
         TEL0177_LOGLN("<<< ERROR");
         return "";
       }
@@ -42,7 +42,7 @@ String TEL0177_AT::sendCommand(const String& cmd, const char* expected, uint32_t
 
 String TEL0177_AT::parseFirstLine(const String& response){
     int start = 0;
-    int end = response.indefOf('\n');
+    int end = response.indexOf('\n');
 
     while(end >= 0){
       String line = response.substring(start, end);
@@ -55,7 +55,7 @@ String TEL0177_AT::parseFirstLine(const String& response){
       }
       
       start = end + 1;
-      end = response.indefOf('\n', start);
+      end = response.indexOf('\n', start);
     }
     return "";
 }
@@ -66,4 +66,17 @@ void TEL0177_AT::clearBuffer(){
   }
 }
 
+bool TEL0177_AT::test(){
+  String response = sendCommand("AT");
+  return response.indexOf("OK");
+}
 
+bool TEL0177_AT::reset(){
+  String response = sendCommand("AT+RESET");
+  return response.indexOf("OK");
+}
+
+bool TEL0177_AT::factoryReset(){
+  String response = sendCommand("AT+RSTSET");
+  return response.indexOf("OK");
+}

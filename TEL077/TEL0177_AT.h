@@ -10,32 +10,26 @@ class TEL0177_AT {
   private:
     Stream& _serial;
 
-    String sendCommand(const char*, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
-    String sendCommand(const String&, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
-
-
-    String parseFirstLine(const String&);
-
-
-    bool waitResponse(const char*, uint32_t = TEL0177_AT_TIMEOUT);
-    String readResponse(uint32_t = TEL0177_AT_TIMEOUT);
-
   public:
     TEL0177_AT(Stream&);
 
     // ============================================
-    // COMMANDES AT DE BASE
+    // FONCTION DE BASE 
     // ============================================
-    bool reset();
-    bool factoryReset();
+    String sendCommand(const char*, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
+    String sendCommand(const String&, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
+
+    String parseFirstLine(const String&);
 
     void clearBuffer();
 
+
     // ============================================
-    // TEST COMMUNICATION
+    // COMMANDES AT DE BASE
     // ============================================
     bool test();
-    bool atTest();
+    bool reset();
+    bool factoryReset();
 
     // ============================================
     // INFORMATION MODULE
