@@ -13,16 +13,61 @@ class TEL0177_AT {
   public:
     TEL0177_AT(Stream&);
 
-    bool sendCommand(const char*, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
-    bool sendCommand(const String&, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
-    bool waitResponse(const char*, uint32_t = TEL0177_AT_TIMEOUT);
-    String readResponse(uint32_t = TEL0177_AT_TIMEOUT);
+    // ============================================
+    // FONCTIONS DE BASE 
+    // ============================================
+    String sendCommand(const char*, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
+    String sendCommand(const String&, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
 
-
+    String parseFirstLine(const String&);
 
     void clearBuffer();
 
-    bool testAT();
+
+    // ============================================
+    // COMMANDES AT DE BASE
+    // ============================================
+    bool test();
+    bool reset();
+    bool factoryReset();
+
+    // ============================================
+    // INFORMATION MODULE
+    // ============================================
+    String getManufacturer();
+    String getModel();
+    String getFirmwareVersion();
+    String getIMEI();
+    String getICCID();
+    String getIMSI();
+
+    String getProductInfo();
+    String getSwVersion();
+    String getHwVersion();
+    String getAllInfo();
+    String getBootCause();
+    String getUartBaud();
+    String getNetworkRegStatus();
+    String getSignalQuality();
+    String getSimStatus();
+    String getDataAttachStatus();
+
+    String getSignalQuality();
+    String getNetworkStatus();
+    String getSIMStatus();
+
+    // ============================================
+    // FONCTIONS MQTT
+    // ============================================
+    String mqttCheckSimReady();
+    String mqttCheckAttached();
+    String mqttConfig();
+    String mqttTcpConnect();
+    String mqttConnect();
+    String mqttSubscribe();
+    String mqttPublish();
+
+
 };
 
 #endif //TEL0177_AT_H
