@@ -23,7 +23,7 @@ String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t t
       response += c;
 
       if(response.indexOf(expected) >= 0){
-        TEL0177_LOGLN("<<< " + response);
+        //TEL0177_LOGLN("<<< " + response);
         return response;
       }
       if(response.indexOf("ERROR") >= 0){
@@ -132,43 +132,43 @@ String TEL0177_AT::getSwVersion(){
 
 String TEL0177_AT::getHwVersion(){
   String response = sendCommand("AT^HVER");
-  return response;
+  return parseFirstLine(response);
 }
 
 String TEL0177_AT::getAllInfo(){
   String response = sendCommand("AT*I");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getBootCause(){
   String response = sendCommand("AT*EXINFO?");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getUartBaud(){
   String response = sendCommand("AT+IPR?");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getNetworkRegStatus(){
   String response = sendCommand("AT+CREG?");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getSignalQuality(){
   String response = sendCommand("AT+CSQ");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getSimStatus(){
   String response = sendCommand("AT+CPIN?");
-  return response;
+  return parseFirstLine(response);
 }
 String TEL0177_AT::getDataAttachStatus(){
   String response = sendCommand("AT+CGATT?");
-  return response;
+  return parseFirstLine(response);
 }
 
 // ============================================
 // FONCTIONS MQTT
 // ============================================
 String TEL0177_AT::mqttCheckSimReady(const String& pinCode){
-  String response = sendCommand("AT+CPIN=\"" + pinCode);
+  String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
   return response;
 }
 
@@ -183,20 +183,20 @@ String TEL0177_AT::mqttConfig(const String& clientId, const String& user, const 
 }
 
 String TEL0177_AT::mqttTcpConnect(const String& serverMQTT, const String& port){
-  String response = sendCommand("AT+MIPSTART=\"" + serverMQTT + "\",\"" + port);
+  String response = sendCommand("AT+MIPSTART=\"" + serverMQTT + "\",\"" + port +"\"");
   return response;
 }
 
 String TEL0177_AT::mqttConnect(const String& cleanSession, const String& keepalive){
-  String response = sendCommand("AT+MCONNECT=\"" + cleanSession + "\",\"" + keepalive);
+  String response = sendCommand("AT+MCONNECT=\"" + cleanSession + "\",\"" + keepalive +"\"");
   return response;
 }
 
 String TEL0177_AT::mqttSubscribe(const String& topic, const int qos){
-  String response = sendCommand("AT+MSUB=\"" + topic + "\",\"" + qos);
+  String response = sendCommand("AT+MSUB=\"" + topic + "\",\"" + qos +"\"");
   return response;
 }
 
 void TEL0177_AT::mqttPublish(const String& topic, const int qos, const int retain, const String& message){
-  String response = sendCommand("AT+MPUB=\"" + topic + "\",\"" + qos + "\",\"" + retain + "\",\"" + message);
+  String response = sendCommand("AT+MPUB=\"" + topic + "\",\"" + qos + "\",\"" + retain + "\",\"" + message +"\"");
 }
