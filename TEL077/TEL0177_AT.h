@@ -52,10 +52,6 @@ class TEL0177_AT {
     String getSimStatus();
     String getDataAttachStatus();
 
-    String getSignalQuality();
-    String getNetworkStatus();
-    String getSIMStatus();
-
     // ============================================
     // FONCTIONS MQTT
     // ============================================
