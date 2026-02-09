@@ -118,3 +118,50 @@ String TEL0177_AT::getIMSI(){
   String response = sendCommand("AT+CIMI");
   return parseFirstLine(response);
 }
+
+//------------------------------------------------------
+String TEL0177_AT::getProductInfo(){
+  String response = sendCommand("ATI");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getSwVersion(){
+  String response = sendCommand("AT+VER");
+  return parseFirstLine(response);
+}
+
+String TEL0177_AT::getHwVersion(){
+  String response = sendCommand("AT^HVER");
+  return response;
+}
+
+String TEL0177_AT::getAllInfo(){
+  String response = sendCommand("AT*I");
+  return response;
+}
+String TEL0177_AT::getBootCause(){
+  String response = sendCommand("AT*EXINFO?");
+  return response;
+}
+String TEL0177_AT::getUartBaud(){
+  String response = sendCommand("AT+IPR?");
+  return response;
+}
+String TEL0177_AT::getNetworkRegStatus(){
+  String response = sendCommand("AT+CREG?");
+  return response;
+}
+String TEL0177_AT::getSignalQuality(){
+  String response = sendCommand("AT+CSQ");
+  return response;
+}
+String TEL0177_AT::getSimStatus(){
+  String response = sendCommand("AT+CPIN?");
+  return response;
+}
+String TEL0177_AT::getDataAttachStatus(){
+  String response = sendCommand("AT+CGATT?");
+  return response;
+}
+
+//------------------------------------------------------
