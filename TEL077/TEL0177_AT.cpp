@@ -164,4 +164,39 @@ String TEL0177_AT::getDataAttachStatus(){
   return response;
 }
 
-//------------------------------------------------------
+// ============================================
+// FONCTIONS MQTT
+// ============================================
+String TEL0177_AT::mqttCheckSimReady(const String& pinCode){
+  String response = sendCommand("AT+CPIN = " + pinCode);
+  return response;
+}
+
+String TEL0177_AT::mqttCheckAttached(){
+  String response = sendCommand("AT+CGATT?");
+  return response;
+}
+
+String TEL0177_AT::mqttConfig(const String& clientId, const String& user, const String& passWord){
+  String response = sendCommand("AT+MCONFIG = " + clientId + "," + user + "," + passWord);
+  return response;
+}
+
+String TEL0177_AT::mqttTcpConnect(const String& serverMQTT, const String& port){
+  String response = sendCommand("AT+MIPSTART = " + serverMQTT + "," + port);
+  return response;
+}
+
+String TEL0177_AT::mqttConnect(const String& cleanSession, const String& keepalive){
+  String response = sendCommand("AT+MCONNECT = " + cleanSession + "," + keepalive);
+  return response;
+}
+
+String TEL0177_AT::mqttSubscribe(const String& topic, const int qos){
+  String response = sendCommand("AT+MSUB = " + topic + "," + qos);
+  return response;
+}
+
+void TEL0177_AT::mqttPublish(const String& topic, const int qos, const int retain, const String& message){
+  String response = sendCommand("AT+MPUB = " + topic + "," + qos + "," + retain + "," + message);
+}
