@@ -23,7 +23,6 @@ class TEL0177_AT {
 
     void clearBuffer();
 
-
     // ============================================
     // COMMANDES AT DE BASE
     // ============================================
@@ -55,15 +54,13 @@ class TEL0177_AT {
     // ============================================
     // FONCTIONS MQTT
     // ============================================
-    String mqttCheckSimReady();
+    String mqttCheckSimReady(const String&);
     String mqttCheckAttached();
-    String mqttConfig();
-    String mqttTcpConnect();
-    String mqttConnect();
-    String mqttSubscribe();
-    String mqttPublish();
-
-
+    String mqttConfig(const String&, const String&, const String&);
+    String mqttTcpConnect(const String&, const String&);
+    String mqttConnect(const String&, const String&);
+    String mqttSubscribe(const String&, const int);
+    void mqttPublish(const String&, const int, const int, const String&);
 };
 
 #endif //TEL0177_AT_H
