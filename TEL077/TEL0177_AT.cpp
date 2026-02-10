@@ -176,13 +176,13 @@ String TEL0177_AT::mqttCheckSimReady(const String& pinCode){
   return response;
 }
 
-String TEL0177_AT::mqttCheckAttached(){
+String TEL0177_AT::mqttCheckAttached(){                //--------------------------------------
   String response = sendCommand("AT+CGATT?");
   return response;
 }
 
 String TEL0177_AT::mqttConfig(const String& clientId, const String& user, const String& passWord){
-  String response = sendCommand("AT+MCONFIG=\"" + clientId + "\",\"" + user + "\",\"" + passWord);
+  String response = sendCommand("AT+MCONFIG=\"" + clientId + "\",\"" + user + "\",\"" + passWord +"\"");
   return response;
 }
 
