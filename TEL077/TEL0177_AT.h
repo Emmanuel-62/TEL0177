@@ -55,7 +55,7 @@ class TEL0177_AT {
     // FONCTIONS MQTT
     // ============================================
     String mqttCheckSimReady(const String&);
-    String mqttCheckAttached();
+    String mqttCheckAttached(); 
     String mqttConfig(const String&, const String&, const String&);
     String mqttTcpConnect(const String&, const String&);
     String mqttConnect(const String&, const String&);

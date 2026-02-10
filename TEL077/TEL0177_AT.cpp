@@ -176,7 +176,7 @@ String TEL0177_AT::mqttCheckSimReady(const String& pinCode){
   return response;
 }
 
-String TEL0177_AT::mqttCheckAttached(){                //--------------------------------------
+String TEL0177_AT::mqttCheckAttached(){
   String response = sendCommand("AT+CGATT?");
   return response;
 }
