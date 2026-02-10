@@ -16,24 +16,28 @@ String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t t
 
   String response = "";
   unsigned long start = millis();
+  unsigned long lastDataTime = millis();
+  bool expectedFound = false;
 
   while(millis() - start < timeout){
     while(this->_serial.available()){
       char c = _serial.read();
       response += c;
 
-      if(response.indexOf(expected) >= 0){
-        //TEL0177_LOGLN("<<< " + response);
-        return response;
+      lastDataTime = millis();
+
+      if (expected && response.indexOf(expected) >= 0){
+        expectedFound = true;
       }
-      if(response.indexOf("ERROR") >= 0){
-        TEL0177_LOGLN("<<< ERROR");
-        return "";
+
+      if(expectedFound && (millis() - lastDataTime > 500)){
+        return response;
       }
     }
   }
-  TEL0177_LOGLN("<<< TIMEOUT");
-  return ""; 
+  
+  //TEL0177_LOGLN("Réponse: " + response);  // AJOUT DEBUG
+  return response; 
 }
 
 String TEL0177_AT::sendCommand(const String& cmd, const char* expected, uint32_t timeout){
@@ -49,7 +53,7 @@ String TEL0177_AT::parseFirstLine(const String& response){
       line.trim();
 
       if(line.length() > 0 && !line.startsWith("AT")){
-        if(line.indexOf("OK")){
+        if(line != "OK"){
           return line;
         }
       }
@@ -72,17 +76,17 @@ void TEL0177_AT::clearBuffer(){
 // ============================================
 bool TEL0177_AT::test(){
   String response = sendCommand("AT");
-  return response.indexOf("OK");
+  return response.indexOf("OK") >= 0;
 }
 
 bool TEL0177_AT::reset(){
   String response = sendCommand("AT+RESET");
-  return response.indexOf("OK");
+  return response.indexOf("OK") >= 0;
 }
 
 bool TEL0177_AT::factoryReset(){
   String response = sendCommand("AT+RSTSET");
-  return response.indexOf("OK");
+  return response.indexOf("OK") >= 0;
 }
 
 
