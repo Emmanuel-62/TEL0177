@@ -3,6 +3,6 @@
 
 TEL0177::TEL0177(Stream & serial):_at(serial){}
 
-bool TEL0177::test(){
-  return this->_at.testAT();
+bool TEL0177::begin(){
+  return this->_at.getAt();
 }

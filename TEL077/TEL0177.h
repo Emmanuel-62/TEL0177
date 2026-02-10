@@ -13,7 +13,9 @@ class TEL0177 {
   public:
     TEL0177(Stream &);
 
-    bool test();
+    bool begin();
+
+    
 
 };
 
