@@ -6,7 +6,7 @@
 // TIMEOUTS (en millisecondes)
 // ============================================
 #define TEL0177_DEFAULT_TIMEOUT         5000
-#define TEL0177_AT_TIMEOUT              1000
+#define TEL0177_AT_TIMEOUT              2000
 #define TEL0177_MQTT_TIMEOUT            2000
 
 
