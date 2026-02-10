@@ -26,7 +26,7 @@ class TEL0177_AT {
     // ============================================
     // COMMANDES AT DE BASE
     // ============================================
-    bool test();
+    bool getAt();
     bool reset();
     bool factoryReset();
 

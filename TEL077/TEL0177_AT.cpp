@@ -6,13 +6,13 @@ TEL0177_AT::TEL0177_AT(Stream & serial): _serial(serial){}
 // COMMANDES AT DE BASE
 // ============================================
 String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t timeout){
-  TEL0177_LOGLN("Commande send ===> " + String(cmd));           
+  //TEL0177_LOGLN("Commande send ===> " + String(cmd));           
 
   clearBuffer();
 
-  _serial.print(cmd);
-  _serial.print("\r\n");
-  _serial.flush();
+  this->_serial.print(cmd);
+  this->_serial.print("\r\n");
+  this->_serial.flush();
 
   String response = "";
   unsigned long start = millis();
@@ -21,7 +21,7 @@ String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t t
 
   while(millis() - start < timeout){
     while(this->_serial.available()){
-      char c = _serial.read();
+      char c = this->_serial.read();
       response += c;
 
       lastDataTime = millis();
@@ -66,7 +66,7 @@ String TEL0177_AT::parseFirstLine(const String& response){
 
 void TEL0177_AT::clearBuffer(){
   while(this->_serial.available()){
-    _serial.read();
+    this->_serial.read();
   }
 }
 
@@ -74,7 +74,7 @@ void TEL0177_AT::clearBuffer(){
 // ============================================
 // COMMANDES AT DE BASE
 // ============================================
-bool TEL0177_AT::test(){
+bool TEL0177_AT::getAt(){
   String response = sendCommand("AT");
   return response.indexOf("OK") >= 0;
 }
