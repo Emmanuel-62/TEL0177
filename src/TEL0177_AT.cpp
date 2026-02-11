@@ -2,17 +2,18 @@
 
 TEL0177_AT::TEL0177_AT(Stream & serial): _serial(serial){}
 
+
 // ============================================
 // COMMANDES AT DE BASE
 // ============================================
 String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t timeout){
-  TEL0177_LOGLN("Commande send ===> " + String(cmd));           
+  //TEL0177_LOGLN("Commande send ===> " + String(cmd));           
 
   clearBuffer();
 
-  _serial.print(cmd);
-  _serial.print("\r\n");
-  _serial.flush();
+  this->_serial.print(cmd);
+  this->_serial.print("\r\n");
+  this->_serial.flush();
 
   String response = "";
   unsigned long start = millis();
@@ -21,22 +22,20 @@ String TEL0177_AT::sendCommand(const char* cmd, const char* expected, uint32_t t
 
   while(millis() - start < timeout){
     while(this->_serial.available()){
-      char c = _serial.read();
+      char c = this->_serial.read();
       response += c;
-
       lastDataTime = millis();
 
       if (expected && response.indexOf(expected) >= 0){
         expectedFound = true;
       }
-
-      if(expectedFound && (millis() - lastDataTime > 500)){
-        return response;
-      }
+    }
+    
+    if(expectedFound && (millis() - lastDataTime > 1000)){
+      return response;
     }
   }
   
-  //TEL0177_LOGLN("Réponse: " + response);  // AJOUT DEBUG
   return response; 
 }
 
@@ -64,9 +63,15 @@ String TEL0177_AT::parseFirstLine(const String& response){
     return "";
 }
 
+String TEL0177_AT::escapeQuotes(const char* str) {
+    String result = String(str);
+    result.replace("\"", "\\\"");
+    return result;
+}
+
 void TEL0177_AT::clearBuffer(){
   while(this->_serial.available()){
-    _serial.read();
+    this->_serial.read();
   }
 }
 
@@ -74,7 +79,7 @@ void TEL0177_AT::clearBuffer(){
 // ============================================
 // COMMANDES AT DE BASE
 // ============================================
-bool TEL0177_AT::test(){
+bool TEL0177_AT::getAt(){
   String response = sendCommand("AT");
   return response.indexOf("OK") >= 0;
 }
@@ -118,12 +123,15 @@ String TEL0177_AT::getICCID(){
   return parseFirstLine(response);
 }
 
+   
+// ============================================
+// FONCTIONS DEMANDE CODE PIN
+// ============================================
 String TEL0177_AT::getIMSI(){
   String response = sendCommand("AT+CIMI");
   return parseFirstLine(response);
 }
 
-//------------------------------------------------------
 String TEL0177_AT::getProductInfo(){
   String response = sendCommand("ATI");
   return parseFirstLine(response);
@@ -168,39 +176,62 @@ String TEL0177_AT::getDataAttachStatus(){
   return parseFirstLine(response);
 }
 
+
+// ============================================
+// FONCTIONS CODE PIN
+// ============================================
+bool TEL0177_AT::setSimPin(const String& pinCode){
+  String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
+  return response.indexOf("OK") >= 0;
+}
+
 // ============================================
 // FONCTIONS MQTT
 // ============================================
-String TEL0177_AT::mqttCheckSimReady(const String& pinCode){
-  String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
-  return response;
+bool TEL0177_AT::mqttConfig(const char* clientId, const char* user, const char* passWord){
+  String cmd = "AT+MCONFIG=\"" + String(clientId) + "\",\"" + String(user) + "\",\"" + String(passWord) +"\"";
+  String response = sendCommand(cmd);
+  return response.indexOf("OK") >= 0;
 }
 
-String TEL0177_AT::mqttCheckAttached(){
-  String response = sendCommand("AT+CGATT?");
-  return response;
+
+bool TEL0177_AT::mqttTcpConnect(const char* serverMQTT, const uint16_t port){
+  if(serverMQTT == nullptr || strlen(serverMQTT) == 0){
+    TEL0177_LOGLN("ERROR: Empty server address");
+    return false;
+  }
+
+  if(port == 0 || port > 65535){
+    TEL0177_LOGLN("ERROR: Invalid port");
+    return false;
+  }
+
+  String cmd = "AT+MIPSTART=\"" + String(serverMQTT) + "\",\"" + port +"\"";
+  String response = sendCommand(cmd, "OK", TEL0177_MQTT_CONNECT_TIMEOUT);
+  return response.indexOf("OK") >= 0;
 }
 
-String TEL0177_AT::mqttConfig(const String& clientId, const String& user, const String& passWord){
-  String response = sendCommand("AT+MCONFIG=\"" + clientId + "\",\"" + user + "\",\"" + passWord +"\"");
-  return response;
+bool TEL0177_AT::mqttConnect(bool cleanSession, uint16_t keepAlive) {
+    String cmd = "AT+MCONNECT=" + String(cleanSession ? 1 : 0) + "," + String(keepAlive);
+    
+    String response = sendCommand(cmd, "OK", TEL0177_MQTT_CONNECT_TIMEOUT);
+    
+    return (response.indexOf("CONNACK") >= 0 || response.indexOf("OK") >= 0);
 }
 
-String TEL0177_AT::mqttTcpConnect(const String& serverMQTT, const String& port){
-  String response = sendCommand("AT+MIPSTART=\"" + serverMQTT + "\",\"" + port +"\"");
-  return response;
+bool TEL0177_AT::mqttSubscribe(const char* topic, const uint8_t qos){
+  String response = sendCommand("AT+MSUB=\"" + String(topic) + "\",\"" + qos +"\"");
+  return response.indexOf("+MSUB") >= 0;
 }
 
-String TEL0177_AT::mqttConnect(const String& cleanSession, const String& keepalive){
-  String response = sendCommand("AT+MCONNECT=\"" + cleanSession + "\",\"" + keepalive +"\"");
-  return response;
-}
-
-String TEL0177_AT::mqttSubscribe(const String& topic, const int qos){
-  String response = sendCommand("AT+MSUB=\"" + topic + "\",\"" + qos +"\"");
-  return response;
-}
-
-void TEL0177_AT::mqttPublish(const String& topic, const int qos, const int retain, const String& message){
-  String response = sendCommand("AT+MPUB=\"" + topic + "\",\"" + qos + "\",\"" + retain + "\",\"" + message +"\"");
+bool TEL0177_AT::mqttPublish(const char* topic, const char* message, uint8_t qos, bool retain){
+    if(!message || strlen(message) == 0) return false;
+    
+    String msgStr = String(message);
+    msgStr.replace("\"", "'"); 
+    
+    String cmd = "AT+MPUB=\"" + String(topic) + "\",\"" + String(qos) + "\",\"" + String(retain ? 1 : 0) + "\",\"" + msgStr + "\"";
+    String response = sendCommand(cmd.c_str(), "OK", TEL0177_MQTT_PUBLISH_TIMEOUT);
+    
+    return (response.indexOf("OK") >= 0);
 }

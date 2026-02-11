@@ -10,6 +10,9 @@ class TEL0177_AT {
   private:
     Stream& _serial;
 
+    String parseFirstLine(const String&);
+    String escapeQuotes(const char*);
+
   public:
     TEL0177_AT(Stream&);
 
@@ -19,14 +22,12 @@ class TEL0177_AT {
     String sendCommand(const char*, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
     String sendCommand(const String&, const char* = "OK", uint32_t = TEL0177_AT_TIMEOUT);
 
-    String parseFirstLine(const String&);
-
     void clearBuffer();
 
     // ============================================
     // COMMANDES AT DE BASE
     // ============================================
-    bool test();
+    bool getAt();
     bool reset();
     bool factoryReset();
 
@@ -38,8 +39,11 @@ class TEL0177_AT {
     String getFirmwareVersion();
     String getIMEI();
     String getICCID();
-    String getIMSI();
 
+    // ============================================
+    // FONCTIONS DEMANDE CODE PIN
+    // ============================================
+    String getIMSI();
     String getProductInfo();
     String getSwVersion();
     String getHwVersion();
@@ -52,15 +56,18 @@ class TEL0177_AT {
     String getDataAttachStatus();
 
     // ============================================
+    // FONCTIONS CODE PIN
+    // ============================================
+    bool setSimPin(const String&);
+
+    // ============================================
     // FONCTIONS MQTT
     // ============================================
-    String mqttCheckSimReady(const String&);
-    String mqttCheckAttached(); 
-    String mqttConfig(const String&, const String&, const String&);
-    String mqttTcpConnect(const String&, const String&);
-    String mqttConnect(const String&, const String&);
-    String mqttSubscribe(const String&, const int);
-    void mqttPublish(const String&, const int, const int, const String&);
+    bool mqttConfig(const char*, const char*, const char*);
+    bool mqttTcpConnect(const char*, const uint16_t);
+    bool mqttConnect(bool cleanSession, uint16_t keepalive);
+    bool mqttSubscribe(const char*, const uint8_t);
+    bool mqttPublish(const char*, const char*, uint8_t = 0, bool = false);
 };
 
 #endif //TEL0177_AT_H
