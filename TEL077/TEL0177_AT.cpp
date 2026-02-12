@@ -188,9 +188,15 @@ bool TEL0177_AT::setSimStatus(){
 }
 
 bool TEL0177_AT::tcpClose(){
-  String response = sendCommand("AT+MIPCLOSE");
+  String response = sendCommand("AT+MIPCLOSE", "OK", TEL0177_MQTT_TIMEOUT);
   return response.indexOf("OK") >= 0;
 }  
+
+bool TEL0177_AT::networkDetach(){
+  String response = sendCommand("AT+CGATT=0", nullptr, TEL0177_MQTT_TIMEOUT);
+  return response.indexOf("OK") >= 0;
+
+}
 
 // ============================================
 // FONCTIONS MQTT
@@ -244,6 +250,6 @@ bool TEL0177_AT::mqttPublish(const char* topic, const char* message, uint8_t qos
 }
 
 bool TEL0177_AT::mqttDisconnect(){
-  String response = sendCommand("AT+MDISCONNECT");
+  String response = sendCommand("AT+MDISCONNECT", "OK", TEL0177_MQTT_TIMEOUT);
   return response.indexOf("OK") >= 0;
 }
