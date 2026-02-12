@@ -59,6 +59,7 @@ class TEL0177_AT {
     // ============================================
     bool setSimPin(const String&);
     bool setSimStatus();
+    bool tcpClose();     
 
 
     // ============================================

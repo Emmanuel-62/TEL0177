@@ -187,6 +187,11 @@ bool TEL0177_AT::setSimStatus(){
   return response.indexOf("OK") >= 0;
 }
 
+bool TEL0177_AT::tcpClose(){
+  String response = sendCommand("AT+MIPCLOSE");
+  return response.indexOf("OK") >= 0;
+}  
+
 // ============================================
 // FONCTIONS MQTT
 // ============================================
