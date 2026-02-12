@@ -175,7 +175,7 @@ String TEL0177_AT::getDataAttachStatus(){
 
 
 // ============================================
-// FONCTIONS CODE PIN ET STATUS
+// FONCTIONS DE VERIFICATIONS
 // ============================================
 bool TEL0177_AT::setSimPin(const String& pinCode){
   String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
@@ -184,7 +184,7 @@ bool TEL0177_AT::setSimPin(const String& pinCode){
 
 bool TEL0177_AT::setSimStatus(){
   String response = sendCommand("AT+CPIN?");
-  return response.indexOf("OK");
+  return response.indexOf("OK") >= 0;
 }
 
 // ============================================
@@ -236,4 +236,9 @@ bool TEL0177_AT::mqttPublish(const char* topic, const char* message, uint8_t qos
     String response = sendCommand(cmd.c_str(), "OK", TEL0177_MQTT_PUBLISH_TIMEOUT);
     
     return (response.indexOf("OK") >= 0);
+}
+
+bool TEL0177_AT::mqttDisconnect(){
+  String response = sendCommand("AT+MDISCONNECT");
+  return response.indexOf("OK") >= 0;
 }
