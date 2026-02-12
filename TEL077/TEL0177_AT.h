@@ -70,7 +70,7 @@ class TEL0177_AT {
     bool commandMqttTcpConnect(const char*, const uint16_t);
     bool commandMqttConnect(bool cleanSession, uint16_t keepalive);
     bool commandMqttSubscribe(const char*, const uint8_t);
-    bool commandMqttPublish(const char*, const char*, uint8_t = 0, bool = false);
+    bool commandMqttPublish(const char*, const char*, uint8_t = TEL0177_MQTT_QOS, bool = TEL0177_MQTT_RETAIN);
     bool commandMqttDisconnect(); 
 };
 
