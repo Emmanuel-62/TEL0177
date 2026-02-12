@@ -195,7 +195,11 @@ bool TEL0177_AT::tcpClose(){
 bool TEL0177_AT::networkDetach(){
   String response = sendCommand("AT+CGATT=0", nullptr, TEL0177_MQTT_TIMEOUT);
   return response.indexOf("OK") >= 0;
+}
 
+bool TEL0177_AT::powerOff(){
+  String response = sendCommand("AT+CPOWD=1");
+  return response.indexOf("NORMAL POWER DOWN") >= 0;
 }
 
 // ============================================

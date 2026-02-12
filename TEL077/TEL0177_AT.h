@@ -61,6 +61,7 @@ class TEL0177_AT {
     bool setSimStatus();
     bool tcpClose();
     bool networkDetach();
+    bool powerOff();
 
 
     // ============================================
