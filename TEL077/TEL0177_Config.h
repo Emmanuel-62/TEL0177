@@ -7,7 +7,6 @@
 // ============================================
 #define TEL0177_DEFAULT_TIMEOUT         5000
 #define TEL0177_AT_TIMEOUT              2000
-#define TEL0177_MQTT_TIMEOUT            2000
 
 
 // ============================================
@@ -20,6 +19,10 @@
 #define TEL0177_LOGLN(x)    Serial.println(x)
 
 
+// ============================================
+// PARAMÈTRES MQTT
+// ============================================
+#define TEL0177_MQTT_TIMEOUT             2000
 #define TEL0177_MQTT_CONNECT_TIMEOUT    10000  
 #define TEL0177_MQTT_PUBLISH_TIMEOUT     5000  
 #define TEL0177_MQTT_SUBSCRIBE_TIMEOUT   5000  

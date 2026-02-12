@@ -1,3 +1,10 @@
+#ifndef TEL0177_H
+#define TEL0177_H
+
+#include <Arduino.h>
+#include <Stream.h>
+#include "TEL0177_AT.h"
+
 class TEL0177 {
   private:
     TEL0177_AT _at;
@@ -6,39 +13,53 @@ class TEL0177 {
     bool _mqttConnected;
 
   public:
-    // Construction
+    
     TEL0177(Stream& serial);
-    
-    // Init
-    bool begin(uint32_t baudRate = 115200);
-    void end();
+
+    //================================================================
+    //===========================/ Init /=============================
+    //================================================================     
+    bool begin(uint32_t = TEL0177_DEFAULT_BAUD);
+    bool end();
     bool isReady();
-    
-    // Infos
+    bool checkSIMReady();
+
+    //================================================================
+    //===========================/ Infos /============================
+    //================================================================    
     String getIMEI();
-    ModuleInfo getModuleInfo();
+    String getModuleInfo();
     void printDiagnostics();
-    
-    // SIM
+
+    //================================================================
+    //===========================/ SIM /==============================
+    //================================================================
     bool isSimReady();
-    bool unlockSim(const char* pin);
-    
-    // Réseau
-    bool connectNetwork(uint32_t timeout = 60000);
+    bool unlockSim(const String&);
+
+    //================================================================
+    //===========================/ Réseau /===========================
+    //================================================================
+    bool connectNetwork(uint32_t = TEL0177_MQTT_CONNECT_TIMEOUT);
     bool isNetworkConnected();
-    SignalQuality getSignalQuality();
+    String getSignalQuality();
     int getSignalStrength();  
     
-    // MQTT
-    bool mqttBegin(const char* server, uint16_t port, const char* clientId, const char* user = "", const char* password = "");
-    bool mqttConnect(bool cleanSession = true, uint16_t keepAlive = 60);
+    //================================================================
+    //===========================/ MQTT /=============================
+    //================================================================
+    bool mqttBegin(const char*, uint16_t, const char*, const char* = "", const char* = "");
+    bool mqttConnect(bool = true, uint16_t = TEL0177_MQTT_KEEPALIVE);
     bool mqttDisconnect();
     bool mqttIsConnected();
-    bool mqttPublish(const char* topic, const char* message);
-    bool mqttSubscribe(const char* topic, uint8_t qos = 0);
+    bool mqttPublish(const char*, const char*);
+    bool mqttSubscribe(const char*, uint8_t = TEL0177_MQTT_QOS);
     
-    // Utilitaires
+    //================================================================
+    //=======================/ Utilitaires /==========================
+    //================================================================
     bool reset();
-    String sendATCommand(const char* cmd);
-    TEL0177_AT& getAT();  
+    String sendATCommand(const char*);
 };
+
+#endif // TEL0177_H
