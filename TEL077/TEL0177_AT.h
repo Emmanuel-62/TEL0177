@@ -52,13 +52,15 @@ class TEL0177_AT {
     String getUartBaud();
     String getNetworkRegStatus();
     String getSignalQuality();
-    String getSimStatus();
     String getDataAttachStatus();
 
     // ============================================
     // FONCTIONS CODE PIN
     // ============================================
     bool setSimPin(const String&);
+
+    bool setSimStatus();
+
 
     // ============================================
     // FONCTIONS MQTT

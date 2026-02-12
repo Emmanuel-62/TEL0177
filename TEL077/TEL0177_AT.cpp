@@ -167,10 +167,7 @@ String TEL0177_AT::getSignalQuality(){
   String response = sendCommand("AT+CSQ");
   return parseFirstLine(response);
 }
-String TEL0177_AT::getSimStatus(){
-  String response = sendCommand("AT+CPIN?");
-  return parseFirstLine(response);
-}
+
 String TEL0177_AT::getDataAttachStatus(){
   String response = sendCommand("AT+CGATT?");
   return parseFirstLine(response);
@@ -178,11 +175,16 @@ String TEL0177_AT::getDataAttachStatus(){
 
 
 // ============================================
-// FONCTIONS CODE PIN
+// FONCTIONS CODE PIN ET STATUS
 // ============================================
 bool TEL0177_AT::setSimPin(const String& pinCode){
   String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
   return response.indexOf("OK") >= 0;
+}
+
+bool TEL0177_AT::setSimStatus(){
+  String response = sendCommand("AT+CPIN?");
+  return response.indexOf("OK");
 }
 
 // ============================================
