@@ -63,16 +63,15 @@ class TEL0177_AT {
     bool networkDetach();
     bool powerOff();
 
-
     // ============================================
     // FONCTIONS MQTT
     // ============================================
-    bool mqttConfig(const char*, const char*, const char*);
-    bool mqttTcpConnect(const char*, const uint16_t);
-    bool mqttConnect(bool cleanSession, uint16_t keepalive);
-    bool mqttSubscribe(const char*, const uint8_t);
-    bool mqttPublish(const char*, const char*, uint8_t = 0, bool = false);
-    bool mqttDisconnect(); 
+    bool commandMqttConfig(const char*, const char*, const char*);
+    bool commandMqttTcpConnect(const char*, const uint16_t);
+    bool commandMqttConnect(bool cleanSession, uint16_t keepalive);
+    bool commandMqttSubscribe(const char*, const uint8_t);
+    bool commandMqttPublish(const char*, const char*, uint8_t = 0, bool = false);
+    bool commandMqttDisconnect(); 
 };
 
 #endif //TEL0177_AT_H
