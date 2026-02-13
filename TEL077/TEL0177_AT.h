@@ -52,6 +52,7 @@ class TEL0177_AT {
     String getUartBaud();
     String getNetworkRegStatus();
     String getSignalQuality();
+    String getSimStatus();
     String getDataAttachStatus();
 
     // ============================================
@@ -66,12 +67,12 @@ class TEL0177_AT {
     // ============================================
     // FONCTIONS MQTT
     // ============================================
-    bool commandMqttConfig(const char*, const char*, const char*);
-    bool commandMqttTcpConnect(const char*, const uint16_t);
-    bool commandMqttConnect(bool cleanSession, uint16_t keepalive);
-    bool commandMqttSubscribe(const char*, const uint8_t);
-    bool commandMqttPublish(const char*, const char*, uint8_t = 0, bool = false);
-    bool commandMqttDisconnect(); 
+    bool mqttConfig(const char*, const char*, const char*);
+    bool mqttTcpConnect(const char*, const uint16_t);
+    bool mqttConnect(bool cleanSession, uint16_t keepalive);
+    bool mqttSubscribe(const char*, const uint8_t);
+    bool mqttPublish(const char*, const char*, uint8_t = 0, bool = false);
+    bool mqttDisconnect(); 
 };
 
 #endif //TEL0177_AT_H
