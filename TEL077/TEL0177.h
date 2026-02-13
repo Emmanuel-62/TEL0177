@@ -28,7 +28,7 @@ class TEL0177 {
     //===========================/ Infos /============================
     //================================================================    
     String getIMEI();
-    String getModuleInfo();
+    String getModuleInfoString();
     void printDiagnostics();
 
     //================================================================
@@ -42,8 +42,6 @@ class TEL0177 {
     //================================================================
     bool connectNetwork(uint32_t = TEL0177_MQTT_CONNECT_TIMEOUT);
     bool isNetworkConnected();
-    String getSignalQuality();
-    int getSignalStrength();  
     
     //================================================================
     //===========================/ MQTT /=============================
