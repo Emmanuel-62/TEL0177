@@ -15,7 +15,7 @@ class TEL0177_AT {
 
   public:
     TEL0177_AT(Stream&);
-
+ 
     // ============================================
     // FONCTIONS DE BASE 
     // ============================================
@@ -56,9 +56,13 @@ class TEL0177_AT {
     String getDataAttachStatus();
 
     // ============================================
-    // FONCTIONS CODE PIN
+    // FONCTIONS DE VERIFICATIONS
     // ============================================
     bool setSimPin(const String&);
+    bool setSimStatus();
+    bool tcpClose();
+    bool networkDetach();
+    bool powerOff();
 
     // ============================================
     // FONCTIONS MQTT
@@ -68,6 +72,7 @@ class TEL0177_AT {
     bool mqttConnect(bool cleanSession, uint16_t keepalive);
     bool mqttSubscribe(const char*, const uint8_t);
     bool mqttPublish(const char*, const char*, uint8_t = 0, bool = false);
+    bool mqttDisconnect(); 
 };
 
 #endif //TEL0177_AT_H

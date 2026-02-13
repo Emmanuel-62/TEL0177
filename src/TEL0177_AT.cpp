@@ -43,23 +43,37 @@ String TEL0177_AT::sendCommand(const String& cmd, const char* expected, uint32_t
   return sendCommand(cmd.c_str(), expected, timeout);
 }
 
-String TEL0177_AT::parseFirstLine(const String& response){
+String TEL0177_AT::parseFirstLine(const String& response) {
     int start = 0;
     int end = response.indexOf('\n');
 
-    while(end >= 0){
-      String line = response.substring(start, end);
-      line.trim();
+    while (end >= 0) {
+        String line = response.substring(start, end);
+        line.trim();
 
-      if(line.length() > 0 && !line.startsWith("AT")){
-        if(line != "OK"){
-          return line;
+        if (line.length() > 0 && 
+            !line.startsWith("AT") && 
+            line != "OK" && 
+            line != "ERROR") {
+            
+            int colonIndex = line.indexOf(':');
+            if (colonIndex >= 0) {
+                String value = line.substring(colonIndex + 1);
+                value.trim();
+                
+                if (value.startsWith("\"") && value.endsWith("\"")) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                return value;
+            }
+            
+            return line;
         }
-      }
-      
-      start = end + 1;
-      end = response.indexOf('\n', start);
+
+        start = end + 1;
+        end = response.indexOf('\n', start);
     }
+    
     return "";
 }
 
@@ -167,10 +181,12 @@ String TEL0177_AT::getSignalQuality(){
   String response = sendCommand("AT+CSQ");
   return parseFirstLine(response);
 }
+
 String TEL0177_AT::getSimStatus(){
   String response = sendCommand("AT+CPIN?");
-  return parseFirstLine(response);
+  return response;
 }
+
 String TEL0177_AT::getDataAttachStatus(){
   String response = sendCommand("AT+CGATT?");
   return parseFirstLine(response);
@@ -178,11 +194,31 @@ String TEL0177_AT::getDataAttachStatus(){
 
 
 // ============================================
-// FONCTIONS CODE PIN
+// FONCTIONS DE VERIFICATIONS
 // ============================================
 bool TEL0177_AT::setSimPin(const String& pinCode){
   String response = sendCommand("AT+CPIN=\"" + pinCode +"\"");
   return response.indexOf("OK") >= 0;
+}
+
+bool TEL0177_AT::setSimStatus(){
+  String response = sendCommand("AT+CPIN?");
+  return response.indexOf("OK") >= 0;
+}
+
+bool TEL0177_AT::tcpClose(){
+  String response = sendCommand("AT+MIPCLOSE", "OK", TEL0177_MQTT_TIMEOUT);
+  return response.indexOf("OK") >= 0;
+}  
+
+bool TEL0177_AT::networkDetach(){
+  String response = sendCommand("AT+CGATT=0", nullptr, TEL0177_MQTT_TIMEOUT);
+  return response.indexOf("OK") >= 0;
+}
+
+bool TEL0177_AT::powerOff(){
+  String response = sendCommand("AT+CPOWD=1");
+  return response.indexOf("NORMAL POWER DOWN") >= 0;
 }
 
 // ============================================
@@ -234,4 +270,9 @@ bool TEL0177_AT::mqttPublish(const char* topic, const char* message, uint8_t qos
     String response = sendCommand(cmd.c_str(), "OK", TEL0177_MQTT_PUBLISH_TIMEOUT);
     
     return (response.indexOf("OK") >= 0);
+}
+
+bool TEL0177_AT::mqttDisconnect(){
+  String response = sendCommand("AT+MDISCONNECT", "OK", TEL0177_MQTT_TIMEOUT);
+  return response.indexOf("OK") >= 0;
 }
