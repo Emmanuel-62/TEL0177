@@ -43,23 +43,37 @@ String TEL0177_AT::sendCommand(const String& cmd, const char* expected, uint32_t
   return sendCommand(cmd.c_str(), expected, timeout);
 }
 
-String TEL0177_AT::parseFirstLine(const String& response){
+String TEL0177_AT::parseFirstLine(const String& response) {
     int start = 0;
     int end = response.indexOf('\n');
 
-    while(end >= 0){
-      String line = response.substring(start, end);
-      line.trim();
+    while (end >= 0) {
+        String line = response.substring(start, end);
+        line.trim();
 
-      if(line.length() > 0 && !line.startsWith("AT")){
-        if(line != "OK"){
-          return line;
+        if (line.length() > 0 && 
+            !line.startsWith("AT") && 
+            line != "OK" && 
+            line != "ERROR") {
+            
+            int colonIndex = line.indexOf(':');
+            if (colonIndex >= 0) {
+                String value = line.substring(colonIndex + 1);
+                value.trim();
+                
+                if (value.startsWith("\"") && value.endsWith("\"")) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                return value;
+            }
+            
+            return line;
         }
-      }
-      
-      start = end + 1;
-      end = response.indexOf('\n', start);
+
+        start = end + 1;
+        end = response.indexOf('\n', start);
     }
+    
     return "";
 }
 

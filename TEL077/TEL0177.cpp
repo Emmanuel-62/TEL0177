@@ -15,7 +15,6 @@ TEL0177::TEL0177(Stream& serial)
 bool TEL0177::begin(uint32_t baudRate) {
   bool init = false;
 
-  // Test communication AT (3 tentatives)
   for (uint8_t i = 0; i < 3; ++i) {
     if (this->_at.getAt()) {
       init = true;
@@ -29,7 +28,6 @@ bool TEL0177::begin(uint32_t baudRate) {
     TEL0177_LOGLN("Sur l'initialisation du module TEL0177 ");
     return false;
   }
-  // Vérification de la SIM
    if(!checkSIMReady()){
     TEL0177_LOGLN("SIM est absente du Module !!!");
   }
@@ -47,16 +45,16 @@ bool TEL0177::end() {
     return false;
   }
 
-  if (_mqttConnected) {
+  if (this->_mqttConnected) {
     mqttDisconnect();
-    _mqttConnected = false;
+    this->_mqttConnected = false;
   }
 
-  if (_networkConnected) {
-    _networkConnected = false;
+  if (this->_networkConnected) {
+    this->_networkConnected = false;
   }
 
-  _initialized = false;
+  this->_initialized = false;
 
   TEL0177_LOGLN("Module arrêté proprement");
   return true;
@@ -66,12 +64,12 @@ bool TEL0177::end() {
 // IS READY - Vérification état
 // ============================================
 bool TEL0177::isReady(){
-  if(!_initialized){
+  if(!this->_initialized){
     return false;
   }
 
   if(!this->_at.getAt()){
-    _initialized = false;
+    this->_initialized = false;
     return false;
   }
 
@@ -122,28 +120,34 @@ void TEL0177::printDiagnostics() {
     
     // Module
     Serial.println("--- Module ---");
-    Serial.print("Fabricant : "); Serial.println(_at.getManufacturer());
-    Serial.print("Modèle    : "); Serial.println(_at.getModel());
-    Serial.print("Firmware  : "); Serial.println(_at.getFirmwareVersion());
-    Serial.print("IMEI      : "); Serial.println(_at.getIMEI());
+    Serial.print("Fabricant : "); Serial.println(this->_at.getManufacturer());
+    Serial.print("Modèle    : "); Serial.println(this->_at.getModel());
+    Serial.print("Firmware  : "); Serial.println(this->_at.getFirmwareVersion());
+    Serial.print("IMEI      : "); Serial.println(this->_at.getIMEI());
     
     // SIM
     Serial.println("\n--- SIM ---");
-    Serial.print("ICCID     : "); Serial.println(_at.getICCID());
-    Serial.print("IMSI      : "); Serial.println(_at.getIMSI());
-    Serial.print("État      : "); Serial.println(_at.getSimStatus());
+    Serial.print("ICCID     : "); Serial.println(this->_at.getICCID());
+    
+    if (checkSIMReady()) {
+        Serial.print("IMSI      : "); Serial.println(this->_at.getIMSI());
+        Serial.print("État      : "); Serial.println("✓ READY"); 
+    } else {
+        Serial.print("IMSI      : "); Serial.println("(PIN requis)");
+        Serial.print("État      : "); Serial.println("✗  PIN REQUIS");
+    }
     
     // Réseau
     Serial.println("\n--- Réseau ---");
-    Serial.print("Enregistrement : "); Serial.println(_at.getNetworkRegStatus());
-    Serial.print("Signal         : "); Serial.println(_at.getSignalQuality());
-    Serial.print("Data           : "); Serial.println(_at.getDataAttachStatus());
+    Serial.print("Enregistrement : "); Serial.println(this->_at.getNetworkRegStatus());
+    Serial.print("Signal         : "); Serial.println(this->_at.getSignalQuality());
+    Serial.print("Data           : "); Serial.println(this->_at.getDataAttachStatus());
     
     // États
     Serial.println("\n--- États ---");
-    Serial.print("Initialisé     : "); Serial.println(_initialized ? "Oui" : "Non");
-    Serial.print("Réseau connecté: "); Serial.println(_networkConnected ? "Oui" : "Non");
-    Serial.print("MQTT connecté  : "); Serial.println(_mqttConnected ? "Oui" : "Non");
+    Serial.print("Initialisé     : "); Serial.println(this->_initialized ? "Oui" : "Non");
+    Serial.print("Réseau connecté: "); Serial.println(this->_networkConnected ? "Oui" : "Non");
+    Serial.print("MQTT connecté  : "); Serial.println(this->_mqttConnected ? "Oui" : "Non");
     
     Serial.println("=========================================\n");
 }
@@ -164,7 +168,7 @@ bool TEL0177::unlockSim(const String& pin){
 //===========================/ Réseau /===========================
 //================================================================
 bool TEL0177::connectNetwork(uint32_t timeout){
-  if(!_initialized){return false;}
+  if(!this->_initialized){return false;}
 
   if(!checkSIMReady()){return false;}
 
@@ -189,7 +193,7 @@ bool TEL0177::connectNetwork(uint32_t timeout){
     String attachStatus = this->_at.getDataAttachStatus();
 
     if(attachStatus.indexOf("1") >= 0){
-      _networkConnected = true;
+      this->_networkConnected = true;
       return true;
     }
     
@@ -201,13 +205,13 @@ bool TEL0177::connectNetwork(uint32_t timeout){
 
 
 bool TEL0177::isNetworkConnected(){
-  if (!_networkConnected) return false;
+  if (!this->_networkConnected) return false;
 
   String status = this->_at.getNetworkRegStatus();
   bool connected = (status.indexOf(",1") >= 0 || status.indexOf(",5") >= 0);
 
   if(!connected){
-    _networkConnected = false;
+    this->_networkConnected = false;
   }
   return connected;
 }
@@ -215,21 +219,31 @@ bool TEL0177::isNetworkConnected(){
 //================================================================
 //=======================/ MQTT /=================================
 //================================================================
-bool TEL0177::mqttBegin(const char* server, uint16_t port, const char* clientId, const char* user, const char* password){
-  bool mqttConfig = this->_at.mqttConfig(clientId, user, password);
-  bool mqtttcpConnect = this->_at.mqttTcpConnect(server, port);
-
-  if(!(mqttConfig && mqtttcpConnect)){
-    return false;
-  }
-  this->_mqttConnected = true;
-  return true;
+bool TEL0177::mqttBegin(const char* server, uint16_t port, const char* clientId, const char* user, const char* password) {
+    
+    // Config
+    bool mqttConfig = this->_at.mqttConfig(clientId, user, password);
+    if (!mqttConfig) {
+        TEL0177_LOGLN("✗ Config MQTT");
+        return false;
+    }
+    delay(300);
+    
+    bool mqttTcpConnect = this->_at.mqttTcpConnect(server, port);
+    if (!mqttTcpConnect) {
+        TEL0177_LOGLN("✗ TCP MQTT");
+        return false;
+    }
+    
+    delay(500);
+        
+    return true;
 }
 
 bool TEL0177::mqttConnect(bool cleanSession, uint16_t keepAlive) {
     
     if (this->_at.mqttConnect(cleanSession, keepAlive)) {
-        _mqttConnected = true;
+        this->_mqttConnected = true;
         return true;
     }
     
@@ -238,15 +252,19 @@ bool TEL0177::mqttConnect(bool cleanSession, uint16_t keepAlive) {
 }
 
 bool TEL0177::mqttDisconnect(){
-  return this->_at.mqttDisconnect();
+  bool success = this->_at.mqttDisconnect();
+  if (success) {
+    this->_mqttConnected = false; 
+  }
+  return success;
 }
 
 bool TEL0177::mqttIsConnected(){
-  return _mqttConnected;
+  return this->_mqttConnected;
 }
 
 bool TEL0177::mqttPublish(const char* topic, const char* message){
-  if (!_mqttConnected) {
+  if (!this->_mqttConnected) {
         TEL0177_LOGLN("MQTT non connecté");
         return false;
     }
@@ -255,7 +273,7 @@ bool TEL0177::mqttPublish(const char* topic, const char* message){
 }
 
 bool TEL0177::mqttSubscribe(const char* topic, uint8_t qos){
-  if (!_mqttConnected) {
+  if (!this->_mqttConnected) {
         TEL0177_LOGLN("MQTT non connecté");
         return false;
     }
