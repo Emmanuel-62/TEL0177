@@ -73,6 +73,7 @@ class TEL0177_AT {
     bool mqttSubscribe(const char*, const uint8_t);
     bool mqttPublish(const char*, const char*, uint8_t = 0, bool = false);
     bool mqttDisconnect(); 
+    bool mqttUnsubscribe(const char*);
 };
 
 #endif //TEL0177_AT_H

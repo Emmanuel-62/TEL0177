@@ -276,3 +276,8 @@ bool TEL0177_AT::mqttDisconnect(){
   String response = sendCommand("AT+MDISCONNECT", "OK", TEL0177_MQTT_TIMEOUT);
   return response.indexOf("OK") >= 0;
 }
+
+bool TEL0177_AT::mqttUnsubscribe(const char* topic){
+  String response = sendCommand("AT+MUNSUB=\"" + String(topic) + "\"");
+  return response.indexOf("UNSUBACK") >= 0;
+}
