@@ -281,3 +281,8 @@ bool TEL0177_AT::mqttUnsubscribe(const char* topic){
   String response = sendCommand("AT+MUNSUB=\"" + String(topic) + "\"");
   return response.indexOf("UNSUBACK") >= 0;
 }
+
+bool TEL0177_AT::mqttStatus(){
+  String response = sendCommand("AT+MQTTSTATU");
+  return response.indexOf("OK") >= 0;
+}
