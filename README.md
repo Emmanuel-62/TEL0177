@@ -26,51 +26,51 @@
 
 | # | Fonction       | Type retour | Commande AT | Description                  |
 | - | -------------- | ----------- | ----------- | ---------------------------- |
-| 1 | getAt()        | bool        | AT          | Test de communication module |
+| 1 | testAt()       | bool        | AT          | Test de communication module |
 | 2 | reset()        | bool        | AT+RESET    | Redémarrage soft module      |
 | 3 | factoryReset() | bool        | AT+RSTSET   | Reset paramètres usine       |
 
 ### Informations module / SIM / réseau (15 fonctions)
 
-| #  | Fonction              | Type retour | Commande AT | Exemple retour         |
-| -- | --------------------- | ----------- | ----------- | ---------------------- |
-| 4  | getManufacturer()     | String      | AT+CGMI     | "AirM2M"               |
-| 5  | getModel()            | String      | AT+CGMM     | "Air780EU"             |
-| 6  | getFirmwareVersion()  | String      | AT+CGMR     | "AirM2M_780EU_V1171"   |
-| 7  | getIMEI()             | String      | AT+CGSN     | "869080071397105"      |
-| 8  | getICCID()            | String      | AT+CCID     | "8933200818544034397F" |
-| 9  | getIMSI()             | String      | AT+CIMI     | "208200854403439"      |
-| 10 | getProductInfo()      | String      | ATI         | Infos produit          |
-| 11 | getSwVersion()        | String      | AT+VER      | Version software       |
-| 12 | getHwVersion()        | String      | AT^HVER     | Version hardware       |
-| 13 | getAllInfo()          | String      | AT*I        | Toutes infos combinées |
-| 14 | getBootCause()        | String      | AT*EXINFO?  | Cause dernier boot     |
-| 15 | getUartBaud()         | String      | AT+IPR?     | Baud rate actuel       |
-| 16 | getNetworkRegStatus() | String      | AT+CREG?    | Statut réseau          |
-| 17 | getSignalQuality()    | String      | AT+CSQ      | "25,99" (RSSI,BER)     |
-| 18 | getSimStatus()        | String      | AT+CPIN?    | "+CPIN: READY"         |
+| # | Fonction              | Type retour | Commande AT | Exemple retour         |
+| - | --------------------- | ----------- | ----------- | ---------------------- |
+| 1 | getManufacturer()     | String      | AT+CGMI     | "AirM2M"               |
+| 2 | getModel()            | String      | AT+CGMM     | "Air780EU"             |
+| 3 | getFirmwareVersion()  | String      | AT+CGMR     | "AirM2M_780EU_V1171"   |
+| 4 | getIMEI()             | String      | AT+CGSN     | "869080071397105"      |
+| 5 | getICCID()            | String      | AT+CCID     | "8933200818544034397F" |
+| 6 | getIMSI()             | String      | AT+CIMI     | "208200854403439"      |
+| 7 | getProductInfo()      | String      | ATI         | Infos produit          |
+| 8 | getSwVersion()        | String      | AT+VER      | Version software       |
+| 9 | getHwVersion()        | String      | AT^HVER     | Version hardware       |
+| 10 | getAllInfo()          | String      | AT*I        | Toutes infos combinées |
+| 11 | getBootCause()        | String      | AT*EXINFO?  | Cause dernier boot     |
+| 12 | getUartBaud()         | String      | AT+IPR?     | Baud rate actuel       |
+| 13 | getNetworkRegStatus() | String      | AT+CREG?    | Statut réseau          |
+| 14 | getSignalQuality()    | String      | AT+CSQ      | "25,99" (RSSI,BER)     |
+| 15 | getSimStatus()        | String      | AT+CPIN?    | "+CPIN: READY"         |
 
 ### Gestion SIM & Power (5 fonctions)
 
-| #  | Fonction                 | Type retour | Commande AT    | Description          |
-| -- | ------------------------ | ----------- | -------------- | -------------------- |
-| 19 | setSimPin(const String&) | bool        | AT+CPIN="xxxx" | Entrer code PIN      |
-| 20 | setSimStatus()           | bool        | AT+CPIN?       | Vérifier SIM (bool)  |
-| 21 | tcpClose()               | bool        | AT+MIPCLOSE    | Fermer TCP MQTT      |
-| 22 | networkDetach()          | bool        | AT+CGATT=0     | Détacher réseau data |
-| 23 | powerOff()               | bool        | AT+CPOWD=1     | Éteindre module      |
+| # | Fonction                 | Type retour | Commande AT    | Description          |
+| - | ------------------------ | ----------- | -------------- | -------------------- |
+| 1 | setSimPin(const String&) | bool        | AT+CPIN="xxxx" | Entrer code PIN      |
+| 2 | checkSimReady()          | bool        | AT+CPIN?       | Vérifier SIM (bool)  |
+| 3 | tcpDisconnect()          | bool        | AT+MIPCLOSE    | Fermer TCP MQTT      |
+| 4 | detachNetwork()          | bool        | AT+CGATT=0     | Détacher réseau data |
+| 5 | powerOff()               | bool        | AT+CPOWD=1     | Éteindre module      |
 
 ### MQTT (7 fonctions)
 
-| #  | Fonction                                          | Type retour | Commande AT                      | Paramètres                   |
-| -- | ------------------------------------------------- | ----------- | -------------------------------- | ---------------------------- |
-| 24 | mqttConfig(const char*,const char*,const char*)   | bool        | AT+MCONFIG="id","user","pass"    | ClientID, user, mot de passe |
-| 25 | mqttTcpConnect(const char*,uint16_t)              | bool        | AT+MIPSTART="server","port"      | Broker, port                 |
-| 26 | mqttConnect(bool,uint16_t)                        | bool        | AT+MCONNECT=clean,keepalive      | Session propre, keepalive    |
-| 27 | mqttSubscribe(const char*,uint8_t)                | bool        | AT+MSUB="topic",qos              | Topic, QoS                   |
-| 28 | mqttPublish(const char*,const char*,uint8_t,bool) | bool        | AT+MPUB="topic",qos,retain,"msg" | Topic, message, QoS, retain  |
-| 29 | mqttDisconnect()                                  | bool        | AT+MDISCONNECT                   | Déconnexion MQTT             |
-| 29 | mqttUnsubscribe()                                 | bool        | AT+MUNSUB="topic"                | Topic                        |
+| # | Fonction                                          | Type retour | Commande AT                      | Paramètres                   |
+| - | ------------------------------------------------- | ----------- | -------------------------------- | ---------------------------- |
+| 1 | mqttConfig(const char*,const char*,const char*)   | bool        | AT+MCONFIG="id","user","pass"    | ClientID, user, mot de passe |
+| 2 | mqttTcpConnect(const char*,uint16_t)              | bool        | AT+MIPSTART="server","port"      | Broker, port                 |
+| 3 | mqttConnect(bool,uint16_t)                        | bool        | AT+MCONNECT=clean,keepalive      | Session propre, keepalive    |
+| 4 | mqttSubscribe(const char*,uint8_t)                | bool        | AT+MSUB="topic",qos              | Topic, QoS                   |
+| 5 | mqttPublish(const char*,const char*,uint8_t,bool) | bool        | AT+MPUB="topic",qos,retain,"msg" | Topic, message, QoS, retain  |
+| 6 | mqttDisconnect()                                  | bool        | AT+MDISCONNECT                   | Déconnexion MQTT             |
+| 7 | mqttUnsubscribe()                                 | bool        | AT+MUNSUB="topic"                | Topic                        |
 
 ### Helpers internes (3 fonctions privées)
 
