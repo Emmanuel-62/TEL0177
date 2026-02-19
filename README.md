@@ -4,12 +4,31 @@
 ```text
     TEL0177/
     ├── src/
-    │   ├── TEL0177_Config.h      
-    │   ├── TEL0177_Types.h       
-    │   ├── TEL0177_AT.h          
-    │   ├── TEL0177_AT.cpp        
-    │   ├── TEL0177.h            
-    │   └── TEL0177.cpp           
+    │   ├── core/
+    │   │   ├── TEL0177.h
+    │   │   ├── TEL0177.cpp
+    │   │   ├── TEL0177_Config.h
+    │   │   ├── TEL0177_Types.h
+    │   │
+    │   ├── at/
+    │   │   ├── TEL0177_AT_Core.h
+    │   │   ├── TEL0177_AT_Core.cpp
+    │   │
+    │   ├── network/
+    │   │   ├── TEL0177_Network.h
+    │   │   ├── TEL0177_Network.cpp
+    │   │
+    │   ├── http/
+    │   │   ├── TEL0177_HTTP.h
+    │   │   ├── TEL0177_HTTP.cpp
+    │   │
+    │   ├── sms/
+    │   │   ├── TEL0177_SMS.h
+    │   │   ├── TEL0177_SMS.cpp
+    │   │
+    │   ├── mqtt/
+    │   │   ├── TEL0177_MQTT.h
+    │   │   ├── TEL0177_MQTT.cpp
     │
     ├── examples/
     │   └── Basic/
