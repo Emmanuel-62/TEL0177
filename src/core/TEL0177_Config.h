@@ -6,6 +6,7 @@
 // SETTINGS SERIAL MONITOR DEFAULT BAUD 
 // ====================================================================
 #define TEL_DEFAULT_BAUD                        115200
+#define Serial                                  Sl
 
 
 // ====================================================================
@@ -19,13 +20,24 @@
 #define TEL_LOG_ERROR(x)                        Serial.print(x)
 #define TEL_LOGLN_ERROR(x)                      Serial.println(x)
 
+// 3 - Debug
+#define TEL_DEBUG(x)                            Serial.print(x)
+#define TEL_DEBUGLN(x)                          Serial.println(x)
+
 
 // ====================================================================
 // TIMEOUTS
 // ====================================================================
-#define TEL_DEFAULT_TIMEOUT                     5000
-#define TEL_DEFAULT_AT_TIMEOUT                  2000
-#define TEL_AT_WAIT_RESPONSE                    1000           
+#define TEL_TIMEOUT_DEFAULT                     3000  
+#define TEL_TIMEOUT_DEFAULT_AT                  2000  
+#define TEL_TIMEOUT_NETWORK                     15000  
+#define TEL_TIMEOUT_HTTP                        30000   
+#define TEL_TIMEOUT_MQTT                        10000   
+#define TEL_TIMEOUT_SMS                         10000  
+#define TEL_TIMEOUT_BOOT                        5000   
+
+
+#define TEL_TIMEOUT_AT_WAIT_RESPONSE            1000   
 
 
 // ====================================================================
@@ -41,3 +53,31 @@
 #define TEL_MAX_RETRIES                          3
 
 
+// ====================================================================
+// BUFFERS
+// ====================================================================
+#define TEL_RX_BUFFER_SIZE                        1024    
+#define TEL_LINE_BUFFER_SIZE                      256     
+#define TEL_CMD_BUFFER_SIZE                       256    
+#define TEL_HTTP_BODY_SIZE                        1024    
+#define TEL_MQTT_PAYLOAD_SIZE                     512     
+
+// ====================================================================
+// 
+// ====================================================================
+
+// 1  - RETRY
+#define TEL_RETRY_DELAY_MS                        500
+
+// 2  - RESEAU
+#define TEL_PDP_CONTEXT_ID                        1        
+
+// 3  - MQTT
+#define TEL_MQTT_DEFAULT_PORT                     1883
+#define TEL_MQTT_KEEP_ALIVE                       60
+
+
+
+
+
+#endif //TEL0177_CONFIG_H
