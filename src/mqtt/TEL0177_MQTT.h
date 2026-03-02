@@ -2,18 +2,22 @@
 #define TEL0177_MQTT_H
 
 
-#include "TEL0177_AT_Core.h"
-#include "TEL0177_Config.h"
-#include "TEL0177_Types.h"
+#include <Arduino.h>
+
+
+#include "../at/TEL0177_AT_Core.h"
+#include "../core/TEL0177_Types.h"
+#include "../core/TEL0177_Config.h"
 
 
 // ==========================================================================
 // 
 // ==========================================================================
+typedef void (*TEL_MQTT_Callback)(const char* urc);
 
 typedef void (*TEL_MQTT_Callback)(const char* topic, const char* payload, uint16_t length);
 
-typedef void (*TEL_MQTT_RawCallback)(const char* urc);
+//typedef void (*TEL_MQTT_RawCallback)(const char* urc);
 
 
 class TEL0177_MQTT {
@@ -26,7 +30,7 @@ class TEL0177_MQTT {
     char              _clientId[64];
     char              _user[32];
     char              _pass[64];
-    
+
     uint16_t          _port;
     uint16_t          _keepAlive;
     

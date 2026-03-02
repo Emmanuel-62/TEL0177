@@ -3,7 +3,14 @@
 
 #include <Arduino.h>
 #include <Stream.h>
-#include "TEL0177_AT.h"
+
+
+#include "TEL0177_Types.h"
+#include "TEL0177_Config.h"
+#include "../at/TEL0177_AT_Core.h"
+#include "../mqtt/TEL0177_MQTT.h"
+#include "../network/TEL0177_Network.h"
+
 
 class TEL0177 {
   private:
