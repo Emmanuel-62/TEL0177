@@ -25,7 +25,7 @@ void TEL0177_Network::begin(TEL0177_AT_Core& at) {
 TEL_Status TEL0177_Network::unlockSIM(const char* pin){
   if(!pin) return TEL_INVALID_PARAM;
 
-  char response [TEL_LINE_BUFFER_SIZE] = {0};
+  char response[TEL_LINE_BUFFER_SIZE] = {0};
 
   TEL_Status s = this->_at->sendAndRead("AT+CPIN?", response, sizeof(response));
   if(s != TEL_OK) return s;
@@ -34,10 +34,12 @@ TEL_Status TEL0177_Network::unlockSIM(const char* pin){
 
   if(strstr(response, "SIM PIN")) {
     char command[TEL_CMD_BUFFER_SIZE];
-    snprintf(command, sizeof(command), "AT+CPIN=\%s\"", pin);
+    snprintf(command, sizeof(command), "AT+CPIN=\"%s\"", pin);
 
     return this->_at->send(command);
   }
+
+  return TEL_ERROR;
 }
 
 /** @brief 
@@ -83,6 +85,24 @@ bool TEL0177_Network::isAttached(){
     return false;
   }
   return (strstr(response, "+CGATT: 1") != nullptr);
+}
+
+/** @brief 
+ *  @return bool
+*/
+bool TEL0177_Network::isConnected(){
+  return(this->_state == NET_DETACHED);
+}
+
+
+// ================================================================================================
+// FONCTIONS PRIVEES
+// ================================================================================================
+/** @brief 
+ *  @return TEL_NetState
+*/
+TEL_NetState TEL0177_Network::getState(){
+  return this->_state;
 }
 
 

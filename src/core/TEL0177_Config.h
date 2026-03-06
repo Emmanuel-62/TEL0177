@@ -6,8 +6,6 @@
 // SETTINGS SERIAL MONITOR DEFAULT BAUD 
 // ====================================================================
 #define TEL_DEFAULT_BAUD                        115200
-#define Serial                                  Sl
-
 
 // ====================================================================
 // DISPLAY ON SERIAL MONITOR
@@ -17,8 +15,8 @@
 #define TEL_LOGLN(x)                            Serial.println(x)
 
 // 2 - Error display
-#define TEL_LOG_ERROR(x)                        Serial.print(x)
-#define TEL_LOGLN_ERROR(x)                      Serial.println(x)
+#define TEL_LOG_ERROR(fmt, ...)                 do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); Serial.print(_buf); } while(0)
+#define TEL_LOGLN_ERROR(fmt, ...)               do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); Serial.println(_buf); } while(0)
 
 // 3 - Debug
 #define TEL_DEBUG(x)                            Serial.print(x)
@@ -62,6 +60,8 @@
 #define TEL_HTTP_BODY_SIZE                        1024    
 #define TEL_MQTT_PAYLOAD_SIZE                     512     
 
+
+#define TEL_SIZE_LENGTH                           0
 // ====================================================================
 // 
 // ====================================================================

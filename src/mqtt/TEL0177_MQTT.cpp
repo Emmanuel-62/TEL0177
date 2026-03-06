@@ -27,6 +27,172 @@ void TEL0177_MQTT::begin(TEL0177_AT_Core & at){
 }
 
 /** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeout){
+  if(!host || !this->_clientId[0]) return TEL_INVALID_PARAM;
+  
+  strncpy(this->_host, host, sizeof(_host) - 1);
+  this->_port = port;
+
+  TEL_Status response = _configCredentials(this->_clientId, this->_user, this->_pass);
+  if(response != TEL_OK) return response;
+
+  response = _configBroker(host, port);
+  if(response != TEL_OK) return response;
+
+  char command[TEL_CMD_BUFFER_SIZE];
+  snprintf(command, sizeof(command), "AT+MCONNECT=1,%d", this->_keepAlive);
+
+  response = this->_at->send(command, timeout);
+  if(response != TEL_OK) return response;
+
+  if(!this->_at->waitFor("CONNACK OK", timeout)) return TEL_TIMEOUT;
+
+  this->_connected = true;
+  return TEL_OK;
+}
+
+/** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+void TEL0177_MQTT::setServer(const char* clientId, const char* user, const char* pass, uint16_t keepAlive){
+  if(clientId) strncpy(this->_clientId, clientId, sizeof(_clientId) - 1);
+  if(user)     strncpy(this->_user,     user,     sizeof(_user)     - 1);
+  if(pass)     strncpy(this->_pass,     pass,     sizeof(_pass)     - 1);
+
+  this->_keepAlive = keepAlive;
+}
+
+/** @brief 
+ *  @return TEL_Status
+*/
+TEL_Status TEL0177_MQTT::disconnect(){
+  TEL_Status response = this->_at->send("AT+MDISCONNECT");
+  if (response != TEL_OK) return response;
+
+  response = this->_at->send("AT+MIPCLOSE");
+  if (response != TEL_OK) return response;
+
+  this->_connected = false;
+  return response;
+}
+
+/** @brief 
+ *  @return TEL_Status
+*/
+bool TEL0177_MQTT::isConnected(){
+  if(!this->_connected) return false;
+
+  char response[TEL_LINE_BUFFER_SIZE] = {0};
+  this->_at->sendAndRead("AT+MQTTSTATU", response, sizeof(response));
+
+  this->_connected = (strstr(response, "MQTTSTATU :1") != nullptr);
+
+  return this->_connected;
+}
+
+/** @brief 
+ *  
+ *  @return TEL_Status
+ */
+TEL_Status TEL0177_MQTT::reconnect() {
+    if (this->_connected) {
+        TEL_Status resp = this->disconnect();
+        if (resp != TEL_OK) return resp;
+    }
+
+    TEL_Status resp = _configBroker(this->_host, this->_port);
+    if (resp != TEL_OK) return resp;
+
+    resp = _configCredentials(this->_clientId, this->_user, this->_pass);
+    if (resp != TEL_OK) return resp;
+
+    char command[TEL_CMD_BUFFER_SIZE];
+    snprintf(command, sizeof(command), "AT+MCONNECT=1,%d", this->_keepAlive);
+
+    resp = this->_at->sendAndWait(command, "CONNACK OK", TEL_TIMEOUT_MQTT);
+    if (resp != TEL_OK) return resp;
+
+    this->_connected = true;
+    return TEL_OK;
+}
+
+/** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+TEL_Status TEL0177_MQTT::unsubscribe(const char* topic){
+  if(!topic) return TEL_INVALID_PARAM;
+  if(!this->_connected) return TEL_NOT_CONNECTED;
+
+  char command[TEL_CMD_BUFFER_SIZE];
+  snprintf(command, sizeof(command), "AT+MUNSUB=\"%s\"", topic);
+
+  return this->_at->sendAndWait(command, "UNSUBACK", TEL_TIMEOUT_MQTT);
+
+}
+
+/** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+TEL_Status TEL0177_MQTT::subscribe(const char* topic, uint8_t qos){
+  if(!topic) return TEL_INVALID_PARAM;
+  if(!this->_connected) return TEL_NOT_CONNECTED;
+
+  char command[TEL_CMD_BUFFER_SIZE];
+  snprintf(command, sizeof(command), "AT+MSUB=\"%s\", %d", topic, qos);
+
+  return this->_at->sendAndWait(command, "SUBACK", TEL_TIMEOUT_MQTT);
+}
+
+/** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+TEL_Status TEL0177_MQTT::publish(const char* topic ,const char* payload ,uint8_t qos, bool retain, uint32_t timeout){
+  if(!topic || !payload) return TEL_INVALID_PARAM;
+  if(!this->_connected) return TEL_NOT_CONNECTED;
+
+  char command[TEL_CMD_BUFFER_SIZE];
+  snprintf(command, sizeof(command), 
+          "AT+MPUB=\"%s\",%d, %d, \"%s\"",
+          topic, qos, retain ? 1 : 0, payload);
+
+  TEL_Status response = this->_at->sendAndWait(command, "OK", timeout);
+  if(response != TEL_OK) return response;
+
+  if(qos >= 1){
+    if (!this->_at->waitFor("PUBACK", timeout)) return TEL_TIMEOUT;
+  }
+
+  return TEL_OK;
+}
+
+/** @brief 
+ *  @param at 
+ *  @return TEL_Status
+*/
+void TEL0177_MQTT::loop(){
+  if(!this->_at->isAvailable()) return;
+
+  char line[TEL_LINE_BUFFER_SIZE] = {0};
+
+  if(this->_at->readLine(line, sizeof(line), 100)){
+    if(strstr(line, "+MSUB:")) {
+      _handleRecv(line);
+    }
+    else if(strstr(line, "+MQTTDISCONN:")) {
+      this->_connected = false;
+    }
+  }
+}
+
+
+/** @brief 
  *  @param callback 
  *  @return TEL_Status
 */
@@ -46,9 +212,14 @@ void TEL0177_MQTT::setCallback(TEL_MQTT_Callback callback){
 TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
   char command[TEL_CMD_BUFFER_SIZE];
 
-  snprintf(command, sizeof(command), "AT+MIPSTART=\"%s\",%d", host, port);
+  snprintf(command, sizeof(command), "AT+MIPSTART=\"%s\",\"%d\"", host, port);
 
-  return this->_at->send(command);
+  TEL_Status s = this->_at->send(command, TEL_TIMEOUT_MQTT);
+  if(s != TEL_OK) return s;
+
+  if(!this->_at->waitFor("CONNECT OK", TEL_TIMEOUT_MQTT)) return TEL_TIMEOUT;
+
+  return TEL_OK;
 }
 
 
@@ -59,13 +230,16 @@ TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
 */
 TEL_Status TEL0177_MQTT::_configCredentials(const char* clientId, const char* user, const char* pass){
 
-  if(!clientId && !user || !pass) return TEL_INVALID_PARAM;
+  if(!clientId) return TEL_INVALID_PARAM;
 
   char command[TEL_CMD_BUFFER_SIZE];
 
-  snprintf(command, sizeof(command), "AT+MCONFIG=\"%s\" , \"%s\" , \"%s\"", clientId, user, pass);
+  snprintf(command, sizeof(command), "AT+MCONFIG=\"%s\",\"%s\",\"%s\"",
+           clientId,
+           user ? user : "",
+           pass ? pass : "");
 
-  return this->_at->send(command);
+  return this->_at->sendAndWait(command, "OK", TEL_TIMEOUT_MQTT);
 }
 
 
@@ -112,5 +286,5 @@ void TEL0177_MQTT::_handleRecv(const char* urc) {
     //TEL_DEBUG("[MQTT] RCV ← ");
     //TEL_DEBUGLN(topic);
 
-    _callback(topic, payload, pLen);
+    this->_callback(topic, payload, pLen);
 }
