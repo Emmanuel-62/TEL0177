@@ -5,8 +5,8 @@
 #include <Stream.h>
 
 
-#include "TEL0177_Config.h"
-#include "TEL0177_Types.h"
+#include "../core/TEL0177_Config.h"
+#include "../core/TEL0177_Types.h"
 
 
 class TEL0177_AT_Core {
