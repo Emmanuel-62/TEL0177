@@ -4,8 +4,8 @@
 #include <Arduino.h>
 
 #include "../at/TEL0177_AT_Core.h"
-#include "../core/TEL0177_Types.h"
-#include "../core/TEL0177_Config.h"
+#include "../TEL0177_Types.h"
+#include "../TEL0177_Config.h"
 
 class TEL0177_Network {
   private:

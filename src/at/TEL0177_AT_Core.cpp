@@ -1,5 +1,4 @@
 #include "TEL0177_AT_Core.h"
-#include "../core/TEL0177_Config.h"
 
 #include <Arduino.h>
 
