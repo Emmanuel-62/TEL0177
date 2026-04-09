@@ -5,11 +5,11 @@
 ```text
     TEL0177/
     ├── src/
-    │   ├── core/
-    │   │   ├── TEL0177.h
-    │   │   ├── TEL0177.cpp
-    │   │   ├── TEL0177_Config.h
-    │   │   ├── TEL0177_Types.h
+    │   │ 
+    │   ├── TEL0177.h
+    │   ├── TEL0177.cpp
+    │   ├── TEL0177_Config.h
+    │   ├── TEL0177_Types.h
     │   │
     │   ├── at/
     │   │   ├── TEL0177_AT_Core.h
