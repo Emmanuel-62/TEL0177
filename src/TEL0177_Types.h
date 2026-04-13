@@ -1,39 +1,54 @@
 #ifndef TEL0177_TYPES_H
 #define TEL0177_TYPES_H
 
-// ==========================================================================
-// CODE DE RETOUR UNIFIES
-// ==========================================================================
-typedef enum {
-    TEL_OK = 0,         // Succès
-    TEL_ERROR,          // Erreur générique
-    TEL_TIMEOUT,        // Pas de réponse dans le délai imparti
-    TEL_BUSY,           // Modem occupé
-    TEL_NO_RESPONSE,    // Aucun octet reçu
-    TEL_INVALID_PARAM,  // Paramètre invalide passé à la fonction
-    TEL_NOT_CONNECTED   // Action requiert une connexion réseau absente
-} TEL_Status;
+#include <Arduino.h>
+#include "TEL0177_Config.h"
+
+/**
+ * @file TEL0177_Types.h
+ * @brief Définit les types communs utilisés par la librairie TEL0177.
+ */
 
 
-// ==========================================================================
-// CODE DE RETOUR UNIFIES
-// ==========================================================================
-typedef enum {
-    NET_DETACHED = 0,   // Pas attaché au réseau GSM
-    NET_ATTACHED,       // Attaché au réseau GSM (pas de data)
-    NET_CONNECTED       // Contexte data ouvert, IP disponible
-} TEL_NetState;
+/**
+ * @enum TEL_Status
+ * @brief Codes de retour unifiés des fonctions de la librairie.
+ */
+enum TEL_Status : uint8_t {
+    TEL_OK = 0,         ///< Exécution réussie
+    TEL_ERROR,          ///< Erreur générique
+    TEL_TIMEOUT,        ///< Délai dépassé avant réception d'une réponse
+    TEL_BUSY,           ///< Modem occupé
+    TEL_NO_RESPONSE,    ///< Aucun octet reçu
+    TEL_INVALID_PARAM,  ///< Paramètre invalide passé à la fonction
+    TEL_NOT_CONNECTED   ///< Action impossible sans connexion active
+};
 
 
-// ==========================================================================
-// Structure message MQTT entrant
-// ==========================================================================
-typedef struct {
-    char    topic[128];
-    char    payload[512];
-    uint8_t qos;
+/**
+ * @enum TEL_NetState
+ * @brief État de la connexion réseau cellulaire.
+ */
+enum TEL_NetState : uint8_t {
+    NET_DETACHED = 0,   ///< Modem non attaché au réseau
+    NET_ATTACHED,       ///< Modem attaché au réseau, sans session data active
+    NET_CONNECTED       ///< Session data active, adresse IP disponible
+};
+
+
+/**
+ * @struct TEL_MQTT_Message
+ * @brief Représente un message MQTT entrant.
+ *
+ * @note Le champ `length` contient la longueur utile du payload,
+ *       sans compter le caractère nul '\0'.
+ * @note Les champs `topic` et `payload` doivent être terminés par '\0'.
+ */
+struct TEL_MQTT_Message {
+    char     topic[TEL_MQTT_TOPIC_SIZE];
+    char     payload[TEL_MQTT_PAYLOAD_SIZE];
+    uint8_t  qos;
     uint16_t length;
-} TEL_MQTT_Message;
-
+};
 
 #endif // TEL0177_TYPES_H
