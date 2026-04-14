@@ -9,7 +9,7 @@
  */
 void TEL0177_AT_Core::begin(Stream& serial) {
     this->_serial = &serial;
-    this->flush();
+    this->clearInput();
 }
 
 
@@ -22,7 +22,7 @@ void TEL0177_AT_Core::begin(Stream& serial) {
 TEL_Status TEL0177_AT_Core::send(const char* command, uint32_t timeout) {
     if (!this->_serial || !command) return TEL_INVALID_PARAM;
 
-    this->flush();
+    this->clearInput();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
@@ -38,7 +38,7 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
         return TEL_INVALID_PARAM;
     }
 
-    this->flush();
+    this->clearInput();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
@@ -77,7 +77,7 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
 TEL_Status TEL0177_AT_Core::sendAndRead(const char* command, char* buffer, uint16_t bufferSize, uint32_t timeout) {
     if (!this->_serial || !command || !buffer || bufferSize == 0) return TEL_INVALID_PARAM;
 
-    this->flush();
+    this->clearInput();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
@@ -96,7 +96,7 @@ TEL_Status TEL0177_AT_Core::sendAndRead(const char* command, char* buffer, uint1
 TEL_Status TEL0177_AT_Core::sendAndReadRaw(const char* command, char* buffer, uint16_t size, uint32_t timeout) {
     if(!this->_serial || !command || !buffer || size == 0) return TEL_INVALID_PARAM;
 
-    flush();
+    clearInput();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
@@ -118,7 +118,7 @@ TEL_Status TEL0177_AT_Core::sendAndReadChecked(const char* command, char* buffer
         return TEL_INVALID_PARAM;
     }
 
-    flush();
+    clearInput();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
@@ -259,7 +259,8 @@ uint16_t TEL0177_AT_Core::readAll(char* buffer, uint16_t size, uint32_t timeout)
 /**
  * 
  */
-void TEL0177_AT_Core::flush() {
+void TEL0177_AT_Core::clearInput() {
+    if (!this->_serial) return;
     if (!this->_serial) return;
 
     while (this->_serial->available()) {

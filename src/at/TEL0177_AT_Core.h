@@ -142,7 +142,7 @@ class TEL0177_AT_Core {
     /**
      * @brief Vide le flux série entrant et réinitialise le buffer interne.
      */
-    void flush();
+    void clearInput();
 
     /**
      * @brief Indique si des données sont disponibles sur le port série.
