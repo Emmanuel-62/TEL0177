@@ -93,9 +93,10 @@ class TEL0177_AT_Core {
     TEL_Status sendAndReadRaw(const char* command, char* buffer, uint16_t size, uint32_t timeout = TEL_TIMEOUT_DEFAULT);
 
     /**
-     * @brief Envoie une commande AT puis lit toute la réponse dans un buffer et vérifie si c'est OK ou ERROR 
+     * @brief Envoie une commande AT puis lit toute la réponse dans un buffer et vérifie si c'est OK ou ERROR
      */
     TEL_Status sendAndReadChecked(const char* command, char* buffer, uint16_t size, uint32_t timeout = TEL_TIMEOUT_DEFAULT);
+    
     /**
      * @brief Envoie des données brutes sans ajouter CRLF.
      * @param data Données à envoyer.

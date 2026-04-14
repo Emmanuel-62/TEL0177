@@ -5,7 +5,6 @@
 ```text
     TEL0177/
     ├── src/
-    │   │ 
     │   ├── TEL0177.h
     │   ├── TEL0177.cpp
     │   ├── TEL0177_Config.h
