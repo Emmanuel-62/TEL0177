@@ -31,7 +31,7 @@ void TEL0177_MQTT::begin(TEL0177_AT_Core & at){
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeout){
-  if(!host || !this->_clientId[0]) return TEL_INVALID_PARAM;
+  if(!this->_at || !host || !this->_clientId[0]) return TEL_INVALID_PARAM;
   
   strncpy(this->_host, host, sizeof(_host) - 1);
   this->_port = port;
@@ -70,6 +70,8 @@ void TEL0177_MQTT::setServer(const char* clientId, const char* user, const char*
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::disconnect(){
+  if(!this->_at) return TEL_INVALID_PARAM;
+
   TEL_Status response = this->_at->send("AT+MDISCONNECT");
   if (response != TEL_OK) return response;
 
@@ -84,6 +86,7 @@ TEL_Status TEL0177_MQTT::disconnect(){
  *  @return TEL_Status
 */
 bool TEL0177_MQTT::isConnected(){
+  if(!this->_at) return false;
   if(!this->_connected) return false;
 
   char response[TEL_LINE_BUFFER_SIZE] = {0};
@@ -99,25 +102,27 @@ bool TEL0177_MQTT::isConnected(){
  *  @return TEL_Status
  */
 TEL_Status TEL0177_MQTT::reconnect() {
-    if (this->_connected) {
-        TEL_Status resp = this->disconnect();
-        if (resp != TEL_OK) return resp;
-    }
+  if(!this->_at) return TEL_INVALID_PARAM;
 
-    TEL_Status resp = _configBroker(this->_host, this->_port);
+  if (this->_connected) {
+    TEL_Status resp = this->disconnect();
     if (resp != TEL_OK) return resp;
+  }
 
-    resp = _configCredentials(this->_clientId, this->_user, this->_pass);
-    if (resp != TEL_OK) return resp;
+  TEL_Status resp = _configBroker(this->_host, this->_port);
+  if (resp != TEL_OK) return resp;
 
-    char command[TEL_CMD_BUFFER_SIZE];
-    snprintf(command, sizeof(command), "AT+MCONNECT=1,%d", this->_keepAlive);
+  resp = _configCredentials(this->_clientId, this->_user, this->_pass);
+  if (resp != TEL_OK) return resp;
 
-    resp = this->_at->sendAndWait(command, "CONNACK OK", TEL_TIMEOUT_MQTT);
-    if (resp != TEL_OK) return resp;
+  char command[TEL_CMD_BUFFER_SIZE];
+  snprintf(command, sizeof(command), "AT+MCONNECT=1,%d", this->_keepAlive);
 
-    this->_connected = true;
-    return TEL_OK;
+  resp = this->_at->sendAndWait(command, "CONNACK OK", TEL_TIMEOUT_MQTT);
+  if (resp != TEL_OK) return resp;
+
+  this->_connected = true;
+  return TEL_OK;
 }
 
 /** @brief 
@@ -125,7 +130,7 @@ TEL_Status TEL0177_MQTT::reconnect() {
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::unsubscribe(const char* topic){
-  if(!topic) return TEL_INVALID_PARAM;
+  if(!this->_at || !topic) return TEL_INVALID_PARAM;
   if(!this->_connected) return TEL_NOT_CONNECTED;
 
   char command[TEL_CMD_BUFFER_SIZE];
@@ -140,7 +145,7 @@ TEL_Status TEL0177_MQTT::unsubscribe(const char* topic){
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::subscribe(const char* topic, uint8_t qos){
-  if(!topic) return TEL_INVALID_PARAM;
+  if(!this->_at || !topic) return TEL_INVALID_PARAM;
   if(!this->_connected) return TEL_NOT_CONNECTED;
 
   char command[TEL_CMD_BUFFER_SIZE];
@@ -154,7 +159,7 @@ TEL_Status TEL0177_MQTT::subscribe(const char* topic, uint8_t qos){
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::publish(const char* topic ,const char* payload ,uint8_t qos, bool retain, uint32_t timeout){
-  if(!topic || !payload) return TEL_INVALID_PARAM;
+  if(!this->_at || !topic || !payload) return TEL_INVALID_PARAM;
   if(!this->_connected) return TEL_NOT_CONNECTED;
 
   char command[TEL_CMD_BUFFER_SIZE];
@@ -177,6 +182,7 @@ TEL_Status TEL0177_MQTT::publish(const char* topic ,const char* payload ,uint8_t
  *  @return TEL_Status
 */
 void TEL0177_MQTT::loop(){
+  if(!this->_at) return;
   if(!this->_at->isAvailable()) return;
 
   char line[TEL_LINE_BUFFER_SIZE] = {0};
@@ -210,6 +216,8 @@ void TEL0177_MQTT::setCallback(TEL_MQTT_Callback callback){
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
+  if(!this->_at || !host) return TEL_INVALID_PARAM;
+
   char command[TEL_CMD_BUFFER_SIZE];
 
   snprintf(command, sizeof(command), "AT+MIPSTART=\"%s\",\"%d\"", host, port);
@@ -229,8 +237,7 @@ TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
  *  @return TEL_Status
 */
 TEL_Status TEL0177_MQTT::_configCredentials(const char* clientId, const char* user, const char* pass){
-
-  if(!clientId) return TEL_INVALID_PARAM;
+  if(!this->_at || !clientId) return TEL_INVALID_PARAM;
 
   char command[TEL_CMD_BUFFER_SIZE];
 
