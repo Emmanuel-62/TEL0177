@@ -18,9 +18,9 @@ typedef void (*TEL_MQTT_RawCallback)(const char* urc);
 
 class TEL0177_MQTT {
   private:
-    TEL0177_AT_Core*  _at;
-    TEL_MQTT_Callback _callback;
-    bool              _connected;
+    TEL0177_AT_Core*  _at = nullptr;
+    TEL_MQTT_Callback _callback = nullptr;
+    bool              _connected = false;
 
     char              _host[64];
     char              _clientId[64];
