@@ -48,8 +48,8 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
     this->_rxBuffer[0] = '\0';
 
     while(millis() - start < timeout){
-        if(this->_serial.available()){
-            char c = static_cast<char>(this->_serial.read());
+        if(this->_serial->available()){
+            char c = static_cast<char>(this->_serial->read());
 
             if(idx < TEL_RX_BUFFER_SIZE - 1){
                 this->_rxBuffer[idx++] = c;
@@ -58,11 +58,11 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
 
             start = millis(); // On prolonge tant que ça répond
 
-            if(waitFor(expected, timeout)) return TEL_OK;
-            if(_contains(this->_rxBuffer, expected)) return TEL_OK;
-            if(_contains(this->_rxBuffer, "ERROR") || 
-               _contains(this->_rxBuffer, "+CME ERROR") ||
-               _contains(this->_rxBuffer, "+CMS ERROR")) {
+            if(_contains(this->_rxBuffer, expected)) {
+                return TEL_OK;
+            }
+
+            if(_hasError(this->_rxBuffer)) {
                 return TEL_ERROR;
             }
         }
@@ -75,19 +75,7 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
  * 
  */
 TEL_Status TEL0177_AT_Core::sendAndRead(const char* command, char* buffer, uint16_t bufferSize, uint32_t timeout) {
-    if (!this->_serial || !command || !buffer || bufferSize == 0) return TEL_INVALID_PARAM;
-
-    this->clearInput();
-
-    this->_serial->print(command);
-    this->_serial->print("\r\n");
-
-    uint16_t len = this->readAll(buffer, bufferSize, timeout);
-
-    if (len == 0) return TEL_NO_RESPONSE;
-    if (this->_contains(buffer, TEL_RESPONSE_ERROR)) return TEL_ERROR;
-
-    return TEL_OK;
+    return this->sendAndReadChecked(command, buffer, bufferSize, timeout);
 }
 
 /**
@@ -129,9 +117,7 @@ TEL_Status TEL0177_AT_Core::sendAndReadChecked(const char* command, char* buffer
         return TEL_NO_RESPONSE;
     }
 
-    if (_contains(buffer, "ERROR") ||
-        _contains(buffer, "+CME ERROR") ||
-        _contains(buffer, "+CMS ERROR")) {
+    if (_hasError(buffer)) {
         return TEL_ERROR;
     }
 
@@ -167,7 +153,7 @@ TEL_Status TEL0177_AT_Core::sendRaw(const char* data, uint16_t length) {
  * 
  */
 bool TEL0177_AT_Core::waitFor(const char* expected, uint32_t timeout) {
-    if (!this->_serial || !expected) return false;
+if (!this->_serial || !expected || expected[0] == '\0') return false;
 
     uint16_t idx = 0;
     uint32_t start = millis();
@@ -182,6 +168,8 @@ bool TEL0177_AT_Core::waitFor(const char* expected, uint32_t timeout) {
                 this->_rxBuffer[idx++] = c;
                 this->_rxBuffer[idx] = '\0';
             }
+
+            start = millis();
 
             if (this->_contains(this->_rxBuffer, expected)) {
                 return true;
@@ -261,7 +249,6 @@ uint16_t TEL0177_AT_Core::readAll(char* buffer, uint16_t size, uint32_t timeout)
  */
 void TEL0177_AT_Core::clearInput() {
     if (!this->_serial) return;
-    if (!this->_serial) return;
 
     while (this->_serial->available()) {
         this->_serial->read();
@@ -282,6 +269,27 @@ bool TEL0177_AT_Core::isAvailable() {
  */
 bool TEL0177_AT_Core::isAlive() {
     return (this->send("AT", TEL_TIMEOUT_DEFAULT_AT) == TEL_OK);
+}
+
+/**
+ * 
+ */
+const char* TEL0177_AT_Core::lastResponse() const {
+    return this->_rxBuffer;
+}
+
+/**
+ * 
+ */
+uint16_t TEL0177_AT_Core::lastResponseLength() const {
+    return strlen(this->_rxBuffer);
+}
+
+/**
+ * 
+ */
+bool TEL0177_AT_Core::isReady() const{
+    return (this->_serial != nullptr);
 }
 
 
@@ -308,6 +316,8 @@ TEL_Status TEL0177_AT_Core::_waitForOKorERROR(uint32_t timeout) {
                 this->_rxBuffer[idx] = '\0';
             }
 
+            start = millis();
+
             if (this->_contains(this->_rxBuffer, "\r\nOK\r\n") ||
                 this->_contains(this->_rxBuffer, "\nOK\r\n") ||
                 this->_contains(this->_rxBuffer, "\r\nOK\n") ||
@@ -315,9 +325,7 @@ TEL_Status TEL0177_AT_Core::_waitForOKorERROR(uint32_t timeout) {
                 return TEL_OK;
             }
 
-            if (this->_contains(this->_rxBuffer, TEL_RESPONSE_ERROR) || 
-                this->_contains(this->_rxBuffer, "+CME ERROR") ||
-                this->_contains(this->_rxBuffer, "+CMS ERROR")) {
+            if (this->_hasError(this->_rxBuffer)) {
                 return TEL_ERROR;
             }
         }
@@ -337,6 +345,10 @@ bool TEL0177_AT_Core::_contains(const char* haystack, const char* needle) {
 /**
  * 
  */
-const char* TEL0177_AT_Core::lastResponse() const {
-    return this->_rxBuffer;
+bool TEL0177_AT_Core::_hasError(const char* response) {
+    if (!response) return false;
+
+    return _contains(response, "ERROR") ||
+           _contains(response, "+CME ERROR") ||
+           _contains(response, "+CMS ERROR");
 }

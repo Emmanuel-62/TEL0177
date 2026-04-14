@@ -45,6 +45,14 @@ class TEL0177_AT_Core {
      */
     bool _contains(const char* haystack, const char* needle);
 
+
+    /**
+     * @brief Vérifie si la réponse contient une indication d'erreur fournie par le modem.
+     * @param response Chaîne de réponse à analyser (peut être NULL).
+     * @return true si une erreur est détectée, false autrement.
+     */
+    bool _hasError(const char* response);
+
   public:
     // ==========================================================================
     // INITIALISATION
@@ -161,6 +169,18 @@ class TEL0177_AT_Core {
      * @return Pointeur sur la chaîne contenant la dernière réponse.
      */
     const char* lastResponse() const;
+
+    /**
+     * @brief Retourne la longueur (en octets) de la dernière réponse stockée dans le buffer interne `_rxBuffer`.
+     * @return Taille de la dernière réponse (exclut le caractère nul terminal).
+     */
+    uint16_t lastResponseLength() const;
+
+    /**
+     * @brief Indique si le cœur AT est prêt (port série associé).
+     * @return true si `begin()` a été appelé et qu'un `Stream` est associé, false sinon.
+     */
+    bool isReady() const;
 };
 
 #endif // TEL0177_AT_CORE_H
