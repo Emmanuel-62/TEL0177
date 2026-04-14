@@ -154,6 +154,12 @@ class TEL0177_AT_Core {
      * @return true si le modem répond correctement, false sinon.
      */
     bool isAlive();
+
+    /**
+     * @brief Récupère la dernière réponse reçue du modem.
+     * @return Pointeur sur la chaîne contenant la dernière réponse.
+     */
+    const char* lastResponse() const;
 };
 
 #endif // TEL0177_AT_CORE_H

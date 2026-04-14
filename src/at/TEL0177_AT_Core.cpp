@@ -314,7 +314,9 @@ TEL_Status TEL0177_AT_Core::_waitForOKorERROR(uint32_t timeout) {
                 return TEL_OK;
             }
 
-            if (this->_contains(this->_rxBuffer, TEL_RESPONSE_ERROR)) {
+            if (this->_contains(this->_rxBuffer, TEL_RESPONSE_ERROR) || 
+                this->_contains(this->_rxBuffer, "+CME ERROR") ||
+                this->_contains(this->_rxBuffer, "+CMS ERROR")) {
                 return TEL_ERROR;
             }
         }
@@ -329,4 +331,11 @@ TEL_Status TEL0177_AT_Core::_waitForOKorERROR(uint32_t timeout) {
 bool TEL0177_AT_Core::_contains(const char* haystack, const char* needle) {
     if (!haystack || !needle) return false;
     return (strstr(haystack, needle) != nullptr);
+}
+
+/**
+ * 
+ */
+const char* TEL0177_AT_Core::lastResponse() const {
+    return this->_rxBuffer;
 }
