@@ -34,14 +34,41 @@ TEL_Status TEL0177_AT_Core::send(const char* command, uint32_t timeout) {
  * 
  */
 TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expected, uint32_t timeout) {
-    if (!this->_serial || !command || !expected) return TEL_INVALID_PARAM;
+    if (!this->_serial || !command || !expected || expected[0] ==  '\0') {
+        return TEL_INVALID_PARAM;
+    }
 
     this->flush();
 
     this->_serial->print(command);
     this->_serial->print("\r\n");
 
-    return this->waitFor(expected, timeout) ? TEL_OK : TEL_TIMEOUT;
+    uint16_t idx = 0;
+    uint32_t start = millis();
+    this->_rxBuffer[0] = '\0';
+
+    while(millis() - start < timeout){
+        if(this->_serial.available()){
+            char c = (char)this->_serial.read();
+
+            if(idx < TEL_RX_BUFFER_SIZE - 1){
+                this->_rxBuffer[idx++] = c;
+                this->_rxBuffer[idx]   = '\0';
+            }
+
+            start = millis(); // On prolonge tant que ça répond
+
+            if(waitFor(expected, timeout)) return TEL_OK;
+            if(_contains(this->_rxBuffer, expected)) return TEL_OK;
+            if(_contains(this->_rxBuffer, "ERROR") || 
+               _contains(this->_rxBuffer, "+CME ERROR") ||
+               _contains(this->_rxBuffer, "+CMS ERROR")){
+                return TEL_ERROR;
+            }
+        }
+    }
+
+    return TEL_TIMEOUT;
 }
 
 /**
