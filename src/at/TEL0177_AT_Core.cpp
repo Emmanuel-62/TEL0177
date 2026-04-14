@@ -206,11 +206,12 @@ bool TEL0177_AT_Core::readLine(char* buffer, uint16_t size, uint32_t timeout) {
     while (millis() - start < timeout) {
         if (this->_serial->available()) {
             char c = static_cast<char>(this->_serial->read());
+            start = millis();
+
+            if (c == '\r') continue;
 
             if (c == '\n') {
-                if (idx > 0 && buffer[idx - 1] == '\r') {
-                    buffer[idx - 1] = '\0';
-                }
+                buffer[idx] = '\0';
                 return (idx > 0);
             }
 
