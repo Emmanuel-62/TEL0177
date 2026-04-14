@@ -49,7 +49,7 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
 
     while(millis() - start < timeout){
         if(this->_serial.available()){
-            char c = (char)this->_serial.read();
+            char c = static_cast<char>(this->_serial.read());
 
             if(idx < TEL_RX_BUFFER_SIZE - 1){
                 this->_rxBuffer[idx++] = c;
@@ -62,7 +62,7 @@ TEL_Status TEL0177_AT_Core::sendAndWait(const char* command, const char* expecte
             if(_contains(this->_rxBuffer, expected)) return TEL_OK;
             if(_contains(this->_rxBuffer, "ERROR") || 
                _contains(this->_rxBuffer, "+CME ERROR") ||
-               _contains(this->_rxBuffer, "+CMS ERROR")){
+               _contains(this->_rxBuffer, "+CMS ERROR")) {
                 return TEL_ERROR;
             }
         }
@@ -88,6 +88,61 @@ TEL_Status TEL0177_AT_Core::sendAndRead(const char* command, char* buffer, uint1
     if (this->_contains(buffer, TEL_RESPONSE_ERROR)) return TEL_ERROR;
 
     return TEL_OK;
+}
+
+/**
+ * 
+ */
+TEL_Status TEL0177_AT_Core::sendAndReadRaw(const char* command, char* buffer, uint16_t size, uint32_t timeout) {
+    if(!this->_serial || !command || !buffer || size == 0) return TEL_INVALID_PARAM;
+
+    flush();
+
+    this->_serial->print(command);
+    this->_serial->print("\r\n");
+
+    uint16_t len = readAll(buffer, size, timeout);
+
+    if(len == 0) return TEL_NO_RESPONSE;
+
+    return TEL_OK;
+
+
+}
+
+/**
+ * 
+ */
+TEL_Status TEL0177_AT_Core::sendAndReadChecked(const char* command, char* buffer, uint16_t size, uint32_t timeout) {
+    if (!this->_serial || !command || !buffer || size == 0) {
+        return TEL_INVALID_PARAM;
+    }
+
+    flush();
+
+    this->_serial->print(command);
+    this->_serial->print("\r\n");
+
+    uint16_t len = this->readAll(buffer, size, timeout);
+
+    if (len == 0) {
+        return TEL_NO_RESPONSE;
+    }
+
+    if (_contains(buffer, "ERROR") ||
+        _contains(buffer, "+CME ERROR") ||
+        _contains(buffer, "+CMS ERROR")) {
+        return TEL_ERROR;
+    }
+
+    if (this->_contains(buffer, "\r\nOK\r\n") ||
+        this->_contains(buffer, "\nOK\r\n") ||
+        this->_contains(buffer, "\r\nOK\n") ||
+        this->_contains(buffer, "\nOK\n")) {
+        return TEL_OK;
+    }
+
+    return TEL_TIMEOUT;
 }
 
 /**
@@ -252,6 +307,8 @@ TEL_Status TEL0177_AT_Core::_waitForOKorERROR(uint32_t timeout) {
             }
 
             if (this->_contains(this->_rxBuffer, "\r\nOK\r\n") ||
+                this->_contains(this->_rxBuffer, "\nOK\r\n") ||
+                this->_contains(this->_rxBuffer, "\r\nOK\n") ||
                 this->_contains(this->_rxBuffer, "\nOK\n")) {
                 return TEL_OK;
             }
