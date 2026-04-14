@@ -22,6 +22,8 @@ enum TEL_Status : uint8_t {
     TEL_NO_RESPONSE,    ///< Aucun octet reçu
     TEL_INVALID_PARAM,  ///< Paramètre invalide passé à la fonction
     TEL_NOT_CONNECTED   ///< Action impossible sans connexion active
+    TEL_BUFFER_OVERFLOW,
+    TEL_PARSE_ERROR
 };
 
 
@@ -33,6 +35,8 @@ enum TEL_NetState : uint8_t {
     NET_DETACHED = 0,   ///< Modem non attaché au réseau
     NET_ATTACHED,       ///< Modem attaché au réseau, sans session data active
     NET_CONNECTED       ///< Session data active, adresse IP disponible
+    NET_REGISTERED,
+    NET_DATA_CONNECTED
 };
 
 
