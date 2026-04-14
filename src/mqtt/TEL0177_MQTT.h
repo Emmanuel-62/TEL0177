@@ -65,7 +65,7 @@ class TEL0177_MQTT {
     /**
     * 
     */
-    void       setServer(const char*, const char* = nullptr, const char* = nullptr, uint16_t = TEL_MQTT_KEEP_ALIVE);
+    void       setClientConfig(const char*, const char* = nullptr, const char* = nullptr, uint16_t = TEL_MQTT_KEEP_ALIVE);
 
     /**
     * 

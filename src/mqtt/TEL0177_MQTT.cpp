@@ -58,7 +58,11 @@ TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeo
  *  @param at 
  *  @return TEL_Status
 */
-void TEL0177_MQTT::setServer(const char* clientId, const char* user, const char* pass, uint16_t keepAlive){
+void TEL0177_MQTT::setClientConfig(const char* clientId, const char* user, const char* pass, uint16_t keepAlive){
+  memset(this->_clientId, 0, sizeof(this->_clientId));
+  memset(this->_user,     0, sizeof(this->_user));
+  memset(this->_pass,     0, sizeof(this->_pass));
+  
   if(clientId) strncpy(this->_clientId, clientId, sizeof(_clientId) - 1);
   if(user)     strncpy(this->_user,     user,     sizeof(_user)     - 1);
   if(pass)     strncpy(this->_pass,     pass,     sizeof(_pass)     - 1);
