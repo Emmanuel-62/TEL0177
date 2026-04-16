@@ -7,175 +7,191 @@
 #include "../TEL0177_Types.h"
 #include "../TEL0177_Config.h"
 
+
 /**
  * @file TEL0177_Network.h
- * @brief Gestion SIM, réseau cellulaire et attachement data du module TEL0177.
+ * @brief Gestion SIM, réseau cellulaire et service data du module TEL0177.
  *
- * Cette classe encapsule les commandes AT liées à la carte SIM,
- * à l'enregistrement réseau, à la qualité du signal et à l'attachement data.
+ * Cette classe vérifie l'état de la SIM, l'enregistrement réseau,
+ * la qualité du signal et la connexion data (APN / PDP / IP).
  */
 class TEL0177_Network {
-  private:
-    /**
-     * @brief Cœur AT utilisé pour communiquer avec le modem.
-     */
-    TEL0177_AT_Core* _at = nullptr;
+private:
+    TEL0177_AT_Core*  _at      = nullptr;   ///< Cœur AT pour les commandes.
+    TEL_NetState      _state   = NET_DETACHED;  ///< État réseau interne.
+    bool              _simReady      = false;   ///< SIM prête.
+    bool              _networkReady  = false;   ///< Réseau prêt.
+    bool              _dataReady     = false;   ///< Data prête.
+    char              _ip[TEL_IP_SIZE]        = {0};  ///< Dernière IP.
+    char              _apn[TEL_APN_SIZE]      = {0};  ///< Dernier APN.
+    char              _pdpType[TEL_PDP_TYPE_SIZE] = {0};  ///< Type PDP.
 
     /**
-     * @brief État réseau local mémorisé par la librairie.
+     * @brief Configure le contexte APN/PDP.
+     * @param apn Nom de l'APN.
+     * @param pdpType Type PDP, par exemple "IP" ou "IPV4V6".
+     * @return TEL_OK en cas de succès, sinon une erreur.
      */
-    TEL_NetState _state = NET_DETACHED;
+    TEL_Status _configureAPN(const char* apn, const char* pdpType = TEL_PDP_TYPE_DEFAULT);
 
     /**
-     * @brief Indicateur de disponibilité de la carte SIM.
+     * @brief Configure l'authentification APN (optionnelle).
+     * @param user Nom d'utilisateur (peut être nullptr).
+     * @param pass Mot de passe (peut être nullptr).
+     * @return TEL_OK en cas de succès, sinon une erreur.
      */
-    bool _simReady = false;
+    TEL_Status _configureAuth(const char* user = nullptr, const char* pass = nullptr);
 
     /**
-     * @brief Indicateur d'enregistrement sur le réseau mobile.
-     */
-    bool _networkReady = false;
-
-    /**
-     * @brief Indicateur d'attachement au service data.
-     */
-    bool _dataReady = false;
-
-    /**
-     * @brief Dernière adresse IP connue.
-     */
-    char _ip[TEL_IP_SIZE] = {0};
-
-    /**
-     * @brief APN actuellement configuré.
-     */
-    char _apn[TEL_APN_SIZE] = {0};
-
-    /**
-     * @brief Configure l'APN utilisé pour la connexion data.
-     * @param apn Nom de l'APN opérateur.
-     * @return Code d'état TEL_Status.
-     */
-    TEL_Status _configureAPN(const char* apn);
-
-    /**
-     * @brief Attend l'enregistrement du modem sur le réseau.
-     * @param timeout Délai maximal d'attente en millisecondes.
-     * @return TEL_OK si le modem est enregistré, sinon un code d'erreur.
+     * @brief Attend l'enregistrement du modem sur le réseau mobile.
+     * @param timeout Délai maximal d'attente.
+     * @return TEL_OK si enregistré, sinon une erreur.
      */
     TEL_Status _waitForNetworkReg(uint32_t timeout);
 
-  public:
+public:
     /**
-     * @brief Initialise la couche réseau avec le cœur AT.
-     * @param at Référence vers l'objet TEL0177_AT_Core déjà initialisé.
+     * @brief Associe le cœur AT à la couche réseau.
+     * @param at Instance déjà initialisée de TEL0177_AT_Core.
      */
     void begin(TEL0177_AT_Core& at);
 
+
+    // ==========================================================================
+    // SIM
+    // ==========================================================================
+
     /**
-     * @brief Vérifie si la carte SIM est prête.
-     *
-     * Utilise typiquement la commande AT+CPIN?.
-     *
-     * @return TEL_OK si la SIM est prête, sinon un code d'erreur.
+     * @brief Vérifie si la SIM est prête (pas de PIN bloqué).
+     * @return TEL_OK si prête, sinon código d'erreur.
      */
     TEL_Status isSIMReady();
 
     /**
-     * @brief Déverrouille la carte SIM avec un code PIN.
-     * @param pin Code PIN de la carte SIM.
-     * @return TEL_OK si le déverrouillage réussit, sinon un code d'erreur.
+     * @brief Déverrouille la SIM avec un code PIN.
+     * @param pin Code PIN.
+     * @return TEL_OK si déverrouillée, sinonerro.
      */
     TEL_Status unlockSIM(const char* pin);
 
+
+    // ==========================================================================
+    // ENREGISTREMENT RÉSEAU
+    // ==========================================================================
+
     /**
-     * @brief Vérifie si le modem est enregistré sur le réseau opérateur.
-     *
-     * Utilise typiquement la commande AT+CREG?.
-     *
-     * @return TEL_OK si le modem est enregistré, sinon un code d'erreur.
+     * @brief Vérifie l'enregistrement réseau mobile.
+     * @return TEL_OK si enregistré, sinon une erreur.
      */
     TEL_Status isNetworkRegistered();
 
     /**
-     * @brief Attend que le modem soit enregistré sur le réseau opérateur.
-     * @param timeout Délai maximal d'attente en millisecondes.
-     * @return TEL_OK si le réseau est disponible, sinon un code d'erreur.
+     * @brief Vérifie l'enregistrement réseau data (GPRS/3G/4G).
+     * @return TEL_OK si enregistré, sinon une erreur.
+     */
+    TEL_Status isDataNetworkRegistered();
+
+    /**
+     * @brief Vérifie l'enregistrement LTE/EPS.
+     * @return TEL_OK si enregistré, sinon une erreur.
+     */
+    TEL_Status isLTERegistered();
+
+    /**
+     * @brief Attend que le modem soit enregistré sur le réseau.
+     * @param timeout Délai maximal d'attente.
+     * @return TEL_OK si enregistré, sinon une erreur.
      */
     TEL_Status waitForNetwork(uint32_t timeout = TEL_TIMEOUT_NETWORK);
 
     /**
+     * @brief Lit la qualité du signal (RSSI/BER).
+     * @param rssi Référence pour la valeur RSSI.
+     * @param ber  Référence pour la valeur BER.
+     * @return TEL_OK si lu, sinon une erreur.
+     */
+    TEL_Status getSignalQuality(int& rssi, int& ber);
+
+
+    // ==========================================================================
+    // SERVICE DATA / PDP
+    // ==========================================================================
+
+    /**
      * @brief Vérifie si le modem est attaché au service data.
-     *
-     * Utilise typiquement la commande AT+CGATT?.
-     *
-     * @return TEL_OK si le modem est attaché à la data, sinon un code d'erreur.
+     * @return TEL_OK si attaché, sinon une erreur.
      */
     TEL_Status isDataAttached();
 
     /**
      * @brief Attache le modem au service data.
-     *
-     * Utilise typiquement la commande AT+CGATT=1.
-     *
-     * @return TEL_OK si l'attachement data réussit, sinon un code d'erreur.
+     * @return TEL_OK si attachement réussi, sinon une erreur.
      */
     TEL_Status attachData();
 
     /**
      * @brief Détache le modem du service data.
-     *
-     * Utilise typiquement la commande AT+CGATT=0.
-     *
-     * @return TEL_OK si le détachement réussit, sinon un code d'erreur.
+     * @return TEL_OK si détachement réussi, sinon une erreur.
      */
     TEL_Status detachData();
 
     /**
-     * @brief Configure l'APN et prépare la connexion data.
-     * @param apn Nom de l'APN opérateur.
-     * @param user Nom d'utilisateur APN, optionnel.
-     * @param pass Mot de passe APN, optionnel.
-     * @return TEL_OK si la configuration réussit, sinon un code d'erreur.
-     */
-    TEL_Status connectData(const char* apn, const char* user = nullptr, const char* pass = nullptr);
-
-    /**
-     * @brief Ferme ou désactive la connexion data.
-     * @return TEL_OK si la déconnexion réussit, sinon un code d'erreur.
-     */
-    TEL_Status disconnectData();
-
-    /**
-     * @brief Vérifie si la connexion data est active.
-     * @return TEL_OK si la data est active, sinon un code d'erreur.
+     * @brief Vérifie si le contexte PDP est actif.
+     * @return TEL_OK si actif, sinon une erreur.
      */
     TEL_Status isDataConnected();
 
     /**
-     * @brief Lit la qualité du signal radio.
-     *
-     * Utilise typiquement la commande AT+CSQ.
-     *
-     * @param rssi Référence recevant la valeur RSSI.
-     * @param ber Référence recevant la valeur BER.
-     * @return TEL_OK si la lecture réussit, sinon un code d'erreur.
+     * @brief Active le contexte PDP configuré.
+     * @return TEL_OK si activé, sinon une erreur.
      */
-    TEL_Status getSignalQuality(int& rssi, int& ber);
+    TEL_Status activateDataContext();
 
     /**
-     * @brief Lit l'adresse IP actuellement attribuée au module.
+     * @brief Désactive le contexte PDP configuré.
+     * @return TEL_OK si désactivé, sinon une erreur.
+     */
+    TEL_Status deactivateDataContext();
+
+    /**
+     * @brief Configure APN, auth, attache et active le service data.
+     * @param apn Nom de l'APN.
+     * @param user Nom d'utilisateur (optionnel, peut être nullptr).
+     * @param pass Mot de passe (optionnel, peut être nullptr).
+     * @param pdpType Type PDP, par exemple "IP" ou "IPV4V6".
+     * @return TEL_OK si data prête, sinon une erreur.
+     */
+    TEL_Status connectData(
+        const char* apn,
+        const char* user = nullptr,
+        const char* pass = nullptr,
+        const char* pdpType = TEL_PDP_TYPE_DEFAULT
+    );
+
+    /**
+     * @brief Désactive la connexion data (PDP et/ou attachement).
+     * @return TEL_OK si déconnexion réussie, sinon une erreur.
+     */
+    TEL_Status disconnectData();
+
+    /**
+     * @brief Retourne l'adresse IP attribuée au contexte PDP.
      * @param buffer Buffer de destination.
      * @param size Taille du buffer.
-     * @return TEL_OK si une adresse IP est récupérée, sinon un code d'erreur.
+     * @return TEL_OK si IP récupérée, sinon une erreur.
      */
     TEL_Status getIPAddress(char* buffer, uint16_t size);
+
+
+    // ==========================================================================
+    // INFORMATIONS MODULE / SIM / RÉSEAU
+    // ==========================================================================
 
     /**
      * @brief Lit l'opérateur réseau actuel.
      * @param buffer Buffer de destination.
      * @param size Taille du buffer.
-     * @return TEL_OK si l'opérateur est récupéré, sinon un code d'erreur.
+     * @return TEL_OK si lu, sinon une erreur.
      */
     TEL_Status getOperator(char* buffer, uint16_t size);
 
@@ -183,7 +199,7 @@ class TEL0177_Network {
      * @brief Lit l'IMEI du module.
      * @param buffer Buffer de destination.
      * @param size Taille du buffer.
-     * @return TEL_OK si l'IMEI est récupéré, sinon un code d'erreur.
+     * @return TEL_OK si lu, sinon une erreur.
      */
     TEL_Status getIMEI(char* buffer, uint16_t size);
 
@@ -191,7 +207,7 @@ class TEL0177_Network {
      * @brief Lit l'ICCID de la carte SIM.
      * @param buffer Buffer de destination.
      * @param size Taille du buffer.
-     * @return TEL_OK si l'ICCID est récupéré, sinon un code d'erreur.
+     * @return TEL_OK si lu, sinon une erreur.
      */
     TEL_Status getICCID(char* buffer, uint16_t size);
 
@@ -199,15 +215,80 @@ class TEL0177_Network {
      * @brief Lit l'IMSI de la carte SIM.
      * @param buffer Buffer de destination.
      * @param size Taille du buffer.
-     * @return TEL_OK si l'IMSI est récupéré, sinon un code d'erreur.
+     * @return TEL_OK si lu, sinon une erreur.
      */
     TEL_Status getIMSI(char* buffer, uint16_t size);
 
     /**
-     * @brief Retourne l'état réseau mémorisé.
-     * @return État réseau TEL_NetState.
+     * @brief Lit le fabricant du module.
+     * @param buffer Buffer de destination.
+     * @param size Taille du buffer.
+     * @return TEL_OK si lu, sinon une erreur.
+     */
+    TEL_Status getManufacturer(char* buffer, uint16_t size);
+
+    /**
+     * @brief Lit le modèle du module.
+     * @param buffer Buffer de destination.
+     * @param size Taille du buffer.
+     * @return TEL_OK si lu, sinon une erreur.
+     */
+    TEL_Status getModel(char* buffer, uint16_t size);
+
+    /**
+     * @brief Lit la version firmware du module.
+     * @param buffer Buffer de destination.
+     * @param size Taille du buffer.
+     * @return TEL_OK si lu, sinon une erreur.
+     */
+    TEL_Status getFirmware(char* buffer, uint16_t size);
+
+
+    // ==========================================================================
+    // GETTERS D'ÉTAT LOCAL
+    // ==========================================================================
+
+    /**
+     * @brief Retourne l'état réseau interne.
+     * @return État TEL_NetState.
      */
     TEL_NetState getState() const;
+
+    /**
+     * @brief Indique si la SIM était prête au dernier contrôle.
+     * @return true si prête.
+     */
+    bool simReady() const;
+
+    /**
+     * @brief Indique si le réseau était prêt au dernier contrôle.
+     * @return true si prêt.
+     */
+    bool networkReady() const;
+
+    /**
+     * @brief Indique si la data était prête au dernier contrôle.
+     * @return true si prête.
+     */
+    bool dataReady() const;
+
+    /**
+     * @brief Retourne la dernière adresse IP connue.
+     * @return IP ou chaîne vide si inconnue.
+     */
+    const char* ipAddress() const;
+
+    /**
+     * @brief Retourne le dernier APN configuré.
+     * @return APN ou chaîne vide si inconnu.
+     */
+    const char* apn() const;
+
+    /**
+     * @brief Retourne le dernier type PDP configuré.
+     * @return Type PDP ou chaîne vide si inconnu.
+     */
+    const char* pdpType() const;
 };
 
 #endif // TEL0177_NETWORK_H

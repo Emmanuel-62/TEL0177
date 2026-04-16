@@ -5,220 +5,178 @@
 #include "../TEL0177_Config.h"
 #include "../TEL0177_Types.h"
 
+
 /**
  * @file TEL0177_MQTT.h
  * @brief Gestion MQTT du module TEL0177.
  *
- * Cette classe encapsule les commandes AT liées au MQTT :
- * configuration client, connexion au broker, publication,
- * abonnement, désabonnement et réception de messages entrants.
+ * Cette classe configure le client MQTT, se connecte à un broker,
+ * publie/écoute des messages et expose des callbacks.
  */
+
 
 /**
  * @brief Callback appelé lorsqu'un message MQTT est reçu.
- *
- * @param topic Topic MQTT du message reçu.
- * @param payload Contenu du message reçu.
- * @param length Longueur utile du payload.
+ * @param topic Topic du message.
+ * @param payload Contenu du message.
+ * @param length Longueur du payload.
  */
 typedef void (*TEL_MQTT_Callback)(const char* topic, const char* payload, uint16_t length);
 
+
 /**
- * @brief Callback brut appelé lorsqu'une ligne URC MQTT est reçue.
- *
- * Utile pour le debug ou pour analyser le format exact retourné par le modem.
- *
- * @param urc Ligne brute reçue depuis le modem.
+ * @brief Callback appelé avec les URC MQTT bruts.
+ * @param urc Ligne brute reçue du modem.
  */
 typedef void (*TEL_MQTT_RawCallback)(const char* urc);
 
 
 class TEL0177_MQTT {
-  private:
-    /**
-     * @brief Pointeur vers le cœur AT utilisé pour communiquer avec le modem.
-     */
-    TEL0177_AT_Core* _at = nullptr;
-
-    /**
-     * @brief Callback utilisateur appelé lorsqu'un message MQTT est décodé.
-     */
-    TEL_MQTT_Callback _callback = nullptr;
-
-    /**
-     * @brief Callback utilisateur appelé avec l'URC brut reçu.
-     */
-    TEL_MQTT_RawCallback _rawCallback = nullptr;
-
-    /**
-     * @brief État local de la connexion MQTT.
-     */
-    bool _connected = false;
-
-    /**
-     * @brief Adresse du broker MQTT.
-     */
-    char _host[TEL_MQTT_HOST_SIZE] = {0};
-
-    /**
-     * @brief Identifiant client MQTT.
-     */
-    char _clientId[TEL_MQTT_CLIENT_ID_SIZE] = {0};
-
-    /**
-     * @brief Nom d'utilisateur MQTT.
-     */
-    char _user[TEL_MQTT_USER_SIZE] = {0};
-
-    /**
-     * @brief Mot de passe MQTT.
-     */
-    char _pass[TEL_MQTT_PASS_SIZE] = {0};
-
-    /**
-     * @brief Port du broker MQTT.
-     */
-    uint16_t _port = TEL_MQTT_DEFAULT_PORT;
-
-    /**
-     * @brief Keep-alive MQTT en secondes.
-     */
-    uint16_t _keepAlive = TEL_MQTT_KEEP_ALIVE;
+private:
+    TEL0177_AT_Core*   _at          = nullptr;   ///< Cœur AT.
+    TEL_MQTT_Callback  _callback    = nullptr;   ///< Callback messages MQTT.
+    TEL_MQTT_RawCallback _rawCallback = nullptr; ///< Callback URC bruts.
+    bool               _connected   = false;     ///< Connexion MQTT.
+    char               _host[TEL_MQTT_HOST_SIZE]     = {0};  ///< Host du broker.
+    char               _clientId[TEL_MQTT_CLIENT_ID_SIZE] = {0};  ///< Id client.
+    char               _user[TEL_MQTT_USER_SIZE]       = {0};  ///< User MQTT.
+    char               _pass[TEL_MQTT_PASS_SIZE]       = {0};  ///< Pass MQTT.
+    uint16_t           _port        = TEL_MQTT_DEFAULT_PORT;    ///< Port broker.
+    uint16_t           _keepAlive   = TEL_MQTT_KEEP_ALIVE;      ///< Keep‑alive.
 
     /**
      * @brief Configure l'adresse et le port du broker dans le modem.
-     * @param host Adresse du broker MQTT.
-     * @param port Port du broker MQTT.
-     * @return Code d'état TEL_Status.
+     * @param host Adresse du broker.
+     * @param port Port du broker.
+     * @return TEL_Status.
      */
     TEL_Status _configBroker(const char* host, uint16_t port);
 
     /**
-     * @brief Configure les identifiants MQTT dans le modem.
-     * @param clientId Identifiant client MQTT.
-     * @param user Nom d'utilisateur MQTT, optionnel.
-     * @param pass Mot de passe MQTT, optionnel.
-     * @return Code d'état TEL_Status.
+     * @brief Configure les identifiants client MQTT dans le modem.
+     * @param clientId Id client.
+     * @param user User MQTT (peut être nullptr).
+     * @param pass Pass MQTT (peut être nullptr).
+     * @return TEL_Status.
      */
     TEL_Status _configCredentials(const char* clientId, const char* user, const char* pass);
 
     /**
-     * @brief Analyse une ligne URC MQTT reçue du modem.
-     * @param urc Ligne brute reçue.
-     * @param msg Structure de destination à remplir.
-     * @return true si le message a été correctement analysé, false sinon.
+     * @brief Parse une ligne URC MQTT pour extraire un message.
+     * @param urc Ligne reçue.
+     * @param msg Structure de destination.
+     * @return true si message reconnu.
      */
     bool _parseIncomingMessage(const char* urc, TEL_MQTT_Message& msg);
 
     /**
-     * @brief Traite une ligne MQTT reçue et appelle les callbacks si nécessaire.
+     * @brief Traite une ligne MQTT reçue et appelle les callbacks.
      * @param urc Ligne brute reçue.
      */
     void _handleRecv(const char* urc);
 
-  public:
+public:
     /**
-     * @brief Initialise la couche MQTT avec le cœur AT.
-     * @param at Référence vers l'objet TEL0177_AT_Core déjà initialisé.
+     * @brief Associe le cœur AT à la couche MQTT.
+     * @param at Instance déjà initialisée de TEL0177_AT_Core.
      */
     void begin(TEL0177_AT_Core& at);
 
     /**
-     * @brief Configure l'identité du client MQTT.
-     * @param clientId Identifiant client MQTT.
-     * @param user Nom d'utilisateur MQTT, optionnel.
-     * @param pass Mot de passe MQTT, optionnel.
-     * @param keepAlive Keep-alive MQTT en secondes.
+     * @brief Configure l'identité et le keep‑alive MQTT.
+     * @param clientId Id client.
+     * @param user User MQTT (optionnel).
+     * @param pass Pass MQTT (optionnel).
+     * @param keepAlive Keep‑alive en secondes.
      */
     void setClientConfig(
-      const char* clientId,
-      const char* user = nullptr,
-      const char* pass = nullptr,
-      uint16_t keepAlive = TEL_MQTT_KEEP_ALIVE
+        const char* clientId,
+        const char* user = nullptr,
+        const char* pass = nullptr,
+        uint16_t keepAlive = TEL_MQTT_KEEP_ALIVE
     );
 
     /**
      * @brief Se connecte à un broker MQTT.
-     * @param host Adresse du broker MQTT.
-     * @param port Port du broker MQTT.
+     * @param host Adresse du broker.
+     * @param port Port du broker.
      * @param timeout Délai maximal d'attente.
-     * @return TEL_OK si la connexion réussit, sinon un code d'erreur.
+     * @return TEL_OK si OK, sinon un code d'erreur.
      */
     TEL_Status connect(const char* host, uint16_t port, uint32_t timeout = TEL_TIMEOUT_MQTT);
 
     /**
-     * @brief Déconnecte le client MQTT du broker.
-     * @return Code d'état TEL_Status.
+     * @brief Déconnecte le client MQTT.
+     * @return TEL_Status.
      */
     TEL_Status disconnect();
 
     /**
-     * @brief Vérifie si la connexion MQTT est active.
-     * @return true si connecté, false sinon.
+     * @brief Indique si la connexion MQTT est active.
+     * @return true si connecté.
      */
     bool isConnected();
 
     /**
-     * @brief Tente une reconnexion MQTT avec les derniers paramètres connus.
-     * @return Code d'état TEL_Status.
+     * @brief Tente une reconnexion MQTT avec les derniers paramètres.
+     * @return TEL_Status.
      */
     TEL_Status reconnect();
 
     /**
-     * @brief Publie un message MQTT.
+     * @brief Publie un message MQTT sur un topic.
      * @param topic Topic de destination.
      * @param payload Message à publier.
-     * @param qos Niveau QoS MQTT.
-     * @param retain true pour conserver le message côté broker.
+     * @param qos Niveau QoS.
+     * @param retain true pour message retained.
      * @param timeout Délai maximal d'attente.
-     * @return Code d'état TEL_Status.
+     * @return TEL_Status.
      */
     TEL_Status publish(
-      const char* topic,
-      const char* payload,
-      uint8_t qos = 0,
-      bool retain = false,
-      uint32_t timeout = TEL_TIMEOUT_MQTT
+        const char* topic,
+        const char* payload,
+        uint8_t qos = 0,
+        bool retain = false,
+        uint32_t timeout = TEL_TIMEOUT_MQTT
     );
 
     /**
      * @brief S'abonne à un topic MQTT.
      * @param topic Topic à écouter.
      * @param qos Niveau QoS demandé.
-     * @return Code d'état TEL_Status.
+     * @return TEL_Status.
      */
     TEL_Status subscribe(const char* topic, uint8_t qos = 0);
 
     /**
      * @brief Se désabonne d'un topic MQTT.
      * @param topic Topic à ne plus écouter.
-     * @return Code d'état TEL_Status.
+     * @return TEL_Status.
      */
     TEL_Status unsubscribe(const char* topic);
 
     /**
      * @brief Traite les événements MQTT entrants.
      *
-     * À appeler régulièrement dans la boucle principale pour recevoir
-     * les messages MQTT et détecter les déconnexions.
+     * À appeler régulièrement (ex: dans loop()).
      */
     void loop();
 
     /**
      * @brief Traite les événements MQTT pendant une durée donnée.
-     * @param durationMs Durée de traitement en millisecondes.
+     * @param durationMs Durée en millisecondes.
      */
     void loopFor(uint32_t durationMs);
 
     /**
-     * @brief Définit le callback appelé lorsqu'un message MQTT est reçu.
-     * @param callback Fonction utilisateur à appeler.
+     * @brief Définit le callback pour les messages MQTT reçus.
+     * @param callback Fonction utilisateur.
      */
     void setCallback(TEL_MQTT_Callback callback);
 
     /**
-     * @brief Définit le callback appelé avec les URC MQTT bruts.
-     * @param callback Fonction utilisateur à appeler.
+     * @brief Définit le callback pour les URC MQTT bruts.
+     * @param callback Fonction utilisateur.
      */
     void setRawCallback(TEL_MQTT_RawCallback callback);
 };
