@@ -33,8 +33,8 @@ typedef void (*TEL_MQTT_RawCallback)(const char* urc);
 
 class TEL0177_MQTT {
 private:
-    TEL0177_AT_Core*   _at          = nullptr;   ///< Cœur AT.
-    TEL_MQTT_Callback  _callback    = nullptr;   ///< Callback messages MQTT.
+    TEL0177_AT_Core*     _at         = nullptr;   ///< Cœur AT.
+    TEL_MQTT_Callback    _callback   = nullptr;   ///< Callback messages MQTT.
     TEL_MQTT_RawCallback _rawCallback = nullptr; ///< Callback URC bruts.
     bool               _connected   = false;     ///< Connexion MQTT.
     char               _host[TEL_MQTT_HOST_SIZE]     = {0};  ///< Host du broker.
