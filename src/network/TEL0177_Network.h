@@ -63,14 +63,14 @@ public:
 
     /**
      * @brief Vérifie si la SIM est prête (pas de PIN bloqué).
-     * @return TEL_OK si prête, sinon código d'erreur.
+     * @return TEL_OK si prête, sinon un code d'erreur.
      */
     TEL_Status isSIMReady();
 
     /**
      * @brief Déverrouille la SIM avec un code PIN.
      * @param pin Code PIN.
-     * @return TEL_OK si déverrouillée, sinonerro.
+     * @return TEL_OK si déverrouillée, sinon une erreur.
      */
     TEL_Status unlockSIM(const char* pin);
 
