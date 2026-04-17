@@ -7,9 +7,9 @@
 #include "TEL0177_Types.h"
 #include "TEL0177_Config.h"
 
-#include "../at/TEL0177_AT_Core.h"
-#include "../network/TEL0177_Network.h"
-#include "../mqtt/TEL0177_MQTT.h"
+#include "at/TEL0177_AT_Core.h"
+#include "network/TEL0177_Network.h"
+#include "mqtt/TEL0177_MQTT.h"
 
 // #include "http/TEL0177_HTTP.h"
 // #include "sms/TEL0177_SMS.h"
