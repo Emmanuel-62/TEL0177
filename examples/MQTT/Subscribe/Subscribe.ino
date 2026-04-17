@@ -35,14 +35,14 @@ void onMqttMessage(const char* topic, const char* payload, uint16_t length) {
 // ==========================================================================
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(115200);
+  Serial2.begin(115200);
   delay(2000);
 
   Serial.println("=== TEST CALLBACK MQTT ===\n");
 
   // 1. Init modem
   Serial.print("Init modem... ");
-  Serial.println(modem.begin(Serial1) ? "OK" : "KO");
+  Serial.println(modem.begin(Serial2) ? "OK" : "KO");
 
   // 2. SIM PIN
   Serial.print("SIM PIN...    ");
