@@ -74,7 +74,19 @@ TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
     return TEL_BUFFER_OVERFLOW;
   }
 
-  return (this->_at->sendAndWait(command, "CONNECT OK", TEL_TIMEOUT_MQTT));
+  char response[TEL_LINE_BUFFER_SIZE] = {0};
+  TEL_Status status = this->_at->sendAndReadRaw(command, response, sizeof(response), TEL_TIMEOUT_MQTT);
+
+  if (status != TEL_OK) {
+    return status;
+  }
+
+  // Accepte soit "CONNECT OK" soit "ALREADY CONNECT"
+  if (strstr(response, "CONNECT OK") || strstr(response, "ALREADY CONNECT")) {
+    return TEL_OK;
+  }
+
+  return TEL_TIMEOUT;
 }
 
 /**
