@@ -64,6 +64,17 @@
 #define TEL_ENABLE_DEBUG 1
 #endif
 
+// ============================================================================
+// AT RESET
+// ============================================================================
+/**
+ * @brief Commande AT pour faire un reset 
+ */
+#ifndef TEL_RESET_COMMAND
+#define TEL_RESET_COMMAND "AT+RESET"
+#endif
+
+
 
 // ============================================================================
 // MACROS DE LOG
