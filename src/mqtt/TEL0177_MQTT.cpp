@@ -50,92 +50,148 @@ TEL_Status TEL0177_MQTT::_configCredentials(const char* clientId, const char* us
   }
 
   char command[TEL_CMD_BUFFER_SIZE] = {0};
-  int nb = snprintf(command, sizeof(command), "AT+MCONFIG=\"%s\",\"%s\",\"%s\"", clientId, user ? user : "", pass ? pass : "");
+  int n = snprintf(
+    command,
+    sizeof(command),
+    "AT+MCONFIG=\"%s\",\"%s\",\"%s\"",
+    clientId,
+    user ? user : "",
+    pass ? pass : ""
+  );
 
-  if(nb < 0 || nb >= (int)sizeof(command)) {
+  if (n < 0 || n >= (int)sizeof(command)) {
     return TEL_BUFFER_OVERFLOW;
   }
 
-  return (this->_at->send(command, TEL_TIMEOUT_MQTT));
+  return this->_at->sendAndWait(command, "OK", TEL_TIMEOUT_MQTT);
 }
 
 /**
  * 
  */
 TEL_Status TEL0177_MQTT::_configBroker(const char* host, uint16_t port){
-  if(!this->_at || !host || host[0] == '\0'|| port == 0) {
+  if (!this->_at || !host || host[0] == '\0' || port == 0) {
     return TEL_INVALID_PARAM;
   }
 
   char command[TEL_CMD_BUFFER_SIZE] = {0};
-  int nb = snprintf(command, sizeof(command), "AT+MIPSTART=\"%s\",\"%d\"", host, port);
+  int n = snprintf(
+    command,
+    sizeof(command),
+    "AT+MIPSTART=\"%s\",\"%u\"",
+    host,
+    (unsigned int)port
+  );
 
-  if(nb < 0 || nb >= (int)sizeof(command)) {
+  if (n < 0 || n >= (int)sizeof(command)) {
     return TEL_BUFFER_OVERFLOW;
   }
 
-  char response[TEL_LINE_BUFFER_SIZE] = {0};
-  TEL_Status status = this->_at->sendAndReadRaw(command, response, sizeof(response), TEL_TIMEOUT_MQTT);
+  TEL_Status s = this->_at->send(command, TEL_TIMEOUT_MQTT);
+  if (s != TEL_OK) return s;
 
-  if (status != TEL_OK) {
-    return status;
+  if (!this->_at->waitFor("CONNECT OK", TEL_TIMEOUT_MQTT)) {
+    return TEL_TIMEOUT;
   }
 
-  // Accepte soit "CONNECT OK" soit "ALREADY CONNECT"
-  if (strstr(response, "CONNECT OK") || strstr(response, "ALREADY CONNECT")) {
-    return TEL_OK;
-  }
-
-  return TEL_TIMEOUT;
-}
-
-/**
- * 
- */
-TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeout){
-  if(!this->_at || !host || host[0] == '\0' || port == 0) {
-    return TEL_INVALID_PARAM;
-  }
-
-  char command[TEL_CMD_BUFFER_SIZE] = {0};
-  memset(this->_host, 0, sizeof(this->_host));
-
-  strncpy(this->_host, host, sizeof(this->_host) - 1);
-  this->_host[sizeof(this->_host) - 1] = '\0';
-  this->_port = port;
-
-  if(this->_clientId[0] == '\0') {
-    return TEL_INVALID_PARAM;
-  }
-
-  TEL_Status res = this->_configCredentials(this->_clientId, this->_user, this->_pass);
-  if(res != TEL_OK) return res;
-
-  res = this->_configBroker(this->_host, this->_port);
-  if(res != TEL_OK) return res;
-
-  int nb = snprintf(command, sizeof(command), "AT+MCONNECT=%d,%d", TEL_MQTT_CLEAN_SESSION, this->_keepAlive);
-
-  if(nb < 0 || nb >= (int)sizeof(command)) {
-    return TEL_BUFFER_OVERFLOW;
-  }
-
-  res = this->_at->sendAndWait(command, "CONNACK OK", timeout);
-  if(res != TEL_OK) return res ;
-
-  this->_connected = true;
   return TEL_OK;
 }
 
 /**
  * 
  */
-TEL_Status TEL0177_MQTT::disconnect(){
-  if(!this->_at) return TEL_INVALID_PARAM;
-  if(!this->_connected) return TEL_OK;
+TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeout){
+  if (!this->_at || !host || host[0] == '\0' || port == 0) {
+    return TEL_INVALID_PARAM;
+  }
 
-  TEL_Status res = this->_at->send("AT+MDISCONNECT", TEL_TIMEOUT_MQTT);
-  if(res != TEL_OK) return res;
+  if (this->_clientId[0] == '\0') {
+    return TEL_INVALID_PARAM;
+  }
+
+  char hostCopy[TEL_MQTT_HOST_SIZE] = {0};
+  strncpy(hostCopy, host, sizeof(hostCopy) - 1);
+  hostCopy[sizeof(hostCopy) - 1] = '\0';
+
+  memset(this->_host, 0, sizeof(this->_host));
+  strncpy(this->_host, hostCopy, sizeof(this->_host) - 1);
+  this->_host[sizeof(this->_host) - 1] = '\0';
+
+  this->_port = port;
+  this->_connected = false;
+
+  TEL_Status res = TEL_ERROR;
+
+  for (uint8_t attempt = 0; attempt < TEL_MQTT_CONNECT_RETRIES; attempt++) {
+    this->_at->send("AT+MIPCLOSE", 2000);
+    delay(500);
+
+    res = this->_configCredentials(this->_clientId, this->_user, this->_pass);
+    if (res != TEL_OK) {
+      return res;
+    }
+
+    res = this->_configBroker(this->_host, this->_port);
+    if (res != TEL_OK) {
+      this->_at->send("AT+MIPCLOSE", 2000);
+      delay(1000);
+      continue;
+    }
+
+    char command[TEL_CMD_BUFFER_SIZE] = {0};
+    int n = snprintf(
+      command,
+      sizeof(command),
+      "AT+MCONNECT=%d,%d",
+      TEL_MQTT_CLEAN_SESSION,
+      this->_keepAlive
+    );
+
+    if (n < 0 || n >= (int)sizeof(command)) {
+      return TEL_BUFFER_OVERFLOW;
+    }
+
+    res = this->_at->send(command, timeout);
+    if (res != TEL_OK) {
+      this->_at->send("AT+MIPCLOSE", 2000);
+      delay(1000);
+      continue;
+    }
+
+    if (!this->_at->waitFor("CONNACK OK", timeout)) {
+      this->_at->send("AT+MIPCLOSE", 2000);
+      delay(1000);
+      res = TEL_TIMEOUT;
+      continue;
+    }
+
+    this->_connected = true;
+    return TEL_OK;
+  }
+
+  this->_connected = false;
+  return res;
+}
+
+/**
+ * 
+ */
+TEL_Status TEL0177_MQTT::disconnect(){
+  if (!this->_at) return TEL_INVALID_PARAM;
+
+  TEL_Status s = TEL_OK;
+
+  if (this->_connected) {
+    s = this->_at->send("AT+MDISCONNECT", TEL_TIMEOUT_MQTT);
+
+    if (s != TEL_OK) {
+      this->_connected = false;
+      this->_at->send("AT+MIPCLOSE", 2000);
+      return s;
+    }
+  }
+
+  this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT);
 
   this->_connected = false;
   return TEL_OK;
@@ -165,15 +221,22 @@ bool TEL0177_MQTT::isConnected(){
  * 
  */
 TEL_Status TEL0177_MQTT::reconnect() {
-  if(!this->_at) return TEL_INVALID_PARAM;
-  if(this->_host[0] == '\0' || this->_port == 0) return TEL_INVALID_PARAM;
+  if (!this->_at) return TEL_INVALID_PARAM;
+  if (this->_host[0] == '\0' || this->_port == 0) return TEL_INVALID_PARAM;
+  if (this->_clientId[0] == '\0') return TEL_INVALID_PARAM;
 
-  if(this->_connected) {
-    TEL_Status d = this->disconnect();
-    if(d != TEL_OK) return d;
+  char hostCopy[TEL_MQTT_HOST_SIZE] = {0};
+  strncpy(hostCopy, this->_host, sizeof(hostCopy) - 1);
+  hostCopy[sizeof(hostCopy) - 1] = '\0';
+
+  uint16_t portCopy = this->_port;
+
+  TEL_Status d = this->disconnect();
+  if (d != TEL_OK && d != TEL_NOT_CONNECTED) {
+    return d;
   }
 
-  return this->connect(this->_host, this->_port, TEL_TIMEOUT_MQTT);
+  return this->connect(hostCopy, portCopy, TEL_TIMEOUT_MQTT);
 }
 
 /**
@@ -244,22 +307,27 @@ void TEL0177_MQTT::setRawCallback(TEL_MQTT_RawCallback callback){
  * 
  */
 void TEL0177_MQTT::loop(){
-  if(!this->_at) return;
-  if(!this->_at->isAvailable()) return;
+  if (!this->_at) return;
 
-  char line[TEL_LINE_BUFFER_SIZE] = {0};
+  while (this->_at->isAvailable()) {
+    char line[TEL_LINE_BUFFER_SIZE] = {0};
 
-  if(this->_at->readLine(line, sizeof(line), 100)) {
+    if (!this->_at->readLine(line, sizeof(line), 100)) {
+      return;
+    }
 
-    // Le rawCallback reçoit toutes les lignes MQTT importantes
-    if(this->_rawCallback) {
+    if (line[0] == '\0') {
+      continue;
+    }
+
+    if (this->_rawCallback) {
       this->_rawCallback(line);
     }
 
-    if(strstr(line, "+MSUB:")) {
+    if (strstr(line, "+MSUB:")) {
       _handleRecv(line);
     }
-    else if(strstr(line, "+MQTTDISCONN:")) {
+    else if (strstr(line, "+MQTTDISCONN:") || strstr(line, "CLOSED")) {
       this->_connected = false;
     }
   }
