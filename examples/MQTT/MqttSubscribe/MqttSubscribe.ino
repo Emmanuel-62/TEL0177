@@ -165,8 +165,19 @@ void setup() {
 // ==========================================================================
 // LOOP
 // ==========================================================================
+const unsigned long MQTT_CHECK_INTERVAL_MS = 5000;
+unsigned long lastMqttCheck = 0;
+
 void loop() {
+  // 1) Toujours traiter les URC MQTT en priorité
   modem.loop();
+
+  // 2) Vérification de connexion seulement toutes les 5s
+  unsigned long now = millis();
+  if (now - lastMqttCheck < MQTT_CHECK_INTERVAL_MS) {
+    return;
+  }
+  lastMqttCheck = now;
 
   if (!modem.mqttisConnected()) {
     Serial.println("MQTT deconnecte, tentative reconnexion...");
@@ -177,7 +188,6 @@ void loop() {
     } else {
       Serial.print("Reconnect KO | lastError = ");
       Serial.println((int)modem.lastError());
-      delay(5000);
     }
   }
 }
