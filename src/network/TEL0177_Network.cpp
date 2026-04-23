@@ -83,7 +83,7 @@ TEL_Status TEL0177_Network::unlockSIM(const char* pin) {
       return s;
     }
 
-    delay(3000);
+    delay(TEL_SIM_UNLOCK_DELAY_MS);
     return this->isSIMReady();
   }
 

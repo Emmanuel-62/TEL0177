@@ -123,8 +123,8 @@ TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeo
   TEL_Status res = TEL_ERROR;
 
   for (uint8_t attempt = 0; attempt < TEL_MQTT_CONNECT_RETRIES; attempt++) {
-    this->_at->send("AT+MIPCLOSE", 2000);
-    delay(500);
+    this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT_CLOSE);
+    delay(TEL_MQTT_CLOSE_WAIT_MS);
 
     res = this->_configCredentials(this->_clientId, this->_user, this->_pass);
     if (res != TEL_OK) {
@@ -133,8 +133,8 @@ TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeo
 
     res = this->_configBroker(this->_host, this->_port);
     if (res != TEL_OK) {
-      this->_at->send("AT+MIPCLOSE", 2000);
-      delay(1000);
+      this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT_CLOSE);
+      delay(TEL_MQTT_RETRY_DELAY_MS);
       continue;
     }
 
@@ -153,14 +153,14 @@ TEL_Status TEL0177_MQTT::connect(const char* host, uint16_t port, uint32_t timeo
 
     res = this->_at->send(command, timeout);
     if (res != TEL_OK) {
-      this->_at->send("AT+MIPCLOSE", 2000);
-      delay(1000);
+      this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT_CLOSE);
+      delay(TEL_MQTT_RETRY_DELAY_MS);
       continue;
     }
 
     if (!this->_at->waitFor("CONNACK OK", timeout)) {
-      this->_at->send("AT+MIPCLOSE", 2000);
-      delay(1000);
+      this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT_CLOSE);
+      delay(TEL_MQTT_RETRY_DELAY_MS);
       res = TEL_TIMEOUT;
       continue;
     }
@@ -186,7 +186,7 @@ TEL_Status TEL0177_MQTT::disconnect(){
 
     if (s != TEL_OK) {
       this->_connected = false;
-      this->_at->send("AT+MIPCLOSE", 2000);
+      this->_at->send("AT+MIPCLOSE", TEL_TIMEOUT_MQTT_CLOSE);
       return s;
     }
   }

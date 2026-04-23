@@ -64,16 +64,19 @@
 #define TEL_ENABLE_DEBUG 1
 #endif
 
+
 // ============================================================================
-// AT RESET
+// COMMANDE DE RESET
 // ============================================================================
+
 /**
- * @brief Commande AT pour faire un reset 
+ * @brief Commande AT utilisée pour redémarrer le module.
+ *
+ * Peut être redéfinie si un firmware préfère une autre commande.
  */
 #ifndef TEL_RESET_COMMAND
 #define TEL_RESET_COMMAND "AT+RESET"
 #endif
-
 
 
 // ============================================================================
@@ -81,23 +84,23 @@
 // ============================================================================
 
 #if TEL_ENABLE_LOG
-  #define TEL_LOG(x)             do { TEL_LOG_PORT.print(x); } while (0)
-  #define TEL_LOGLN(x)           do { TEL_LOG_PORT.println(x); } while (0)
-  #define TEL_LOG_ERROR(fmt, ...) do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); TEL_LOG_PORT.print(_buf); } while (0)
-  #define TEL_LOGLN_ERROR(fmt, ...) do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); TEL_LOG_PORT.println(_buf); } while (0)
+  #define TEL_LOG(x)                 do { TEL_LOG_PORT.print(x); } while (0)
+  #define TEL_LOGLN(x)               do { TEL_LOG_PORT.println(x); } while (0)
+  #define TEL_LOG_ERROR(fmt, ...)    do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); TEL_LOG_PORT.print(_buf); } while (0)
+  #define TEL_LOGLN_ERROR(fmt, ...)  do { char _buf[256]; snprintf(_buf, sizeof(_buf), fmt, ##__VA_ARGS__); TEL_LOG_PORT.println(_buf); } while (0)
 #else
-  #define TEL_LOG(x)             do {} while (0)
-  #define TEL_LOGLN(x)           do {} while (0)
-  #define TEL_LOG_ERROR(fmt, ...) do {} while (0)
-  #define TEL_LOGLN_ERROR(fmt, ...) do {} while (0)
+  #define TEL_LOG(x)                 do {} while (0)
+  #define TEL_LOGLN(x)               do {} while (0)
+  #define TEL_LOG_ERROR(fmt, ...)    do {} while (0)
+  #define TEL_LOGLN_ERROR(fmt, ...)  do {} while (0)
 #endif
 
 #if TEL_ENABLE_DEBUG
-  #define TEL_DEBUG(x)           do { TEL_LOG_PORT.print(x); } while (0)
-  #define TEL_DEBUGLN(x)         do { TEL_LOG_PORT.println(x); } while (0)
+  #define TEL_DEBUG(x)               do { TEL_LOG_PORT.print(x); } while (0)
+  #define TEL_DEBUGLN(x)             do { TEL_LOG_PORT.println(x); } while (0)
 #else
-  #define TEL_DEBUG(x)           do {} while (0)
-  #define TEL_DEBUGLN(x)         do {} while (0)
+  #define TEL_DEBUG(x)               do {} while (0)
+  #define TEL_DEBUGLN(x)             do {} while (0)
 #endif
 
 
@@ -107,43 +110,67 @@
 
 /**
  * @brief Timeout générique par défaut.
+ *
+ * Utilisé quand aucune catégorie plus précise n'est fournie.
  */
-#define TEL_TIMEOUT_DEFAULT 3000UL
+#define TEL_TIMEOUT_DEFAULT 2000UL
 
 /**
- * @brief Timeout pour les commandes AT simples.
+ * @brief Timeout court pour les commandes AT simples.
+ *
+ * Exemples :
+ * - AT
+ * - AT+CPIN?
+ * - AT+CREG?
+ * - AT+CGREG?
+ * - AT+CEREG?
+ * - AT+CSQ
+ * - AT+CGATT?
+ * - AT+CGACT?
+ * - AT+CGPADDR=1
+ * - AT+MQTTSTATU
  */
-#define TEL_TIMEOUT_DEFAULT_AT 2000UL
+#define TEL_TIMEOUT_DEFAULT_AT 1200UL
 
 /**
- * @brief Timeout pour les opérations réseau.
+ * @brief Timeout pour les opérations réseau globales.
+ *
+ * Exemples :
+ * - attente réseau
+ * - attachement data
+ * - activation PDP
  */
-#define TEL_TIMEOUT_NETWORK 15000UL
+#define TEL_TIMEOUT_NETWORK 8000UL
 
 /**
- * @brief Timeout pour les requêtes HTTP.
+ * @brief Timeout pour les opérations HTTP.
  */
-#define TEL_TIMEOUT_HTTP 30000UL
+#define TEL_TIMEOUT_HTTP 15000UL
 
 /**
  * @brief Timeout pour les opérations MQTT.
+ *
+ * Exemples :
+ * - AT+MIPSTART
+ * - AT+MCONNECT
+ * - AT+MSUB
  */
-#define TEL_TIMEOUT_MQTT 10000UL
+#define TEL_TIMEOUT_MQTT 6000UL
 
 /**
  * @brief Timeout pour les opérations SMS.
  */
-#define TEL_TIMEOUT_SMS 10000UL
+#define TEL_TIMEOUT_SMS 5000UL
 
 /**
  * @brief Temps d’attente après démarrage ou reset du module.
  */
-#define TEL_TIMEOUT_BOOT 5000UL
+#define TEL_TIMEOUT_BOOT 2500UL
 
 /**
- * @brief Délai d’attente entre deux lectures de réponse AT.
+ * @brief Délai d’attente très court entre lectures de réponse AT.
  */
-#define TEL_TIMEOUT_AT_WAIT_RESPONSE 1000UL
+#define TEL_TIMEOUT_AT_WAIT_RESPONSE 200UL
 
 
 // ============================================================================
@@ -167,13 +194,35 @@
 
 /**
  * @brief Nombre maximal de tentatives pour certaines opérations.
+ *
+ * Profil plus réactif pour le développement.
  */
-#define TEL_MAX_RETRIES 3
+#define TEL_MAX_RETRIES 2
 
 /**
  * @brief Délai entre deux tentatives.
  */
-#define TEL_RETRY_DELAY_MS 500UL
+#define TEL_RETRY_DELAY_MS 200UL
+
+/**
+ * @brief Délai après saisie du PIN SIM avant relecture de l'état.
+ */
+#define TEL_SIM_UNLOCK_DELAY_MS 1200UL
+
+/**
+ * @brief Timeout court pour fermer proprement la socket MQTT.
+ */
+#define TEL_TIMEOUT_MQTT_CLOSE 1000UL
+
+/**
+ * @brief Délai court après fermeture MQTT avant tentative suivante.
+ */
+#define TEL_MQTT_CLOSE_WAIT_MS 200UL
+
+/**
+ * @brief Délai entre deux tentatives de connexion MQTT.
+ */
+#define TEL_MQTT_RETRY_DELAY_MS 500UL
 
 
 // ============================================================================
@@ -225,8 +274,18 @@
  */
 #define TEL_MQTT_KEEP_ALIVE 60
 
+/**
+ * @brief Mode clean session MQTT.
+ */
 #define TEL_MQTT_CLEAN_SESSION 1
 
+/**
+ * @brief Nombre de tentatives de connexion MQTT.
+ *
+ * Sur ton module, il arrive qu'une première tentative échoue
+ * après un CONNECT OK suivi d'un CLOSED. Une seconde tentative
+ * suffit souvent.
+ */
 #ifndef TEL_MQTT_CONNECT_RETRIES
 #define TEL_MQTT_CONNECT_RETRIES 2
 #endif
