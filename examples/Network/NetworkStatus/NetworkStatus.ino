@@ -3,189 +3,59 @@
 // ==========================================================================
 // Configuration
 // ==========================================================================
-#define SERIAL_MONITOR_BAUD 115200
-#define MODEM_BAUD          115200
-
-// À adapter selon ta carte SIM
-#define SIM_PIN             "0000"
-
-// Exemple testé avec ta SIM Bouygues
-#define GSM_APN             "mmsbouygtel.com"
-#define GSM_USER            nullptr
-#define GSM_PASS            nullptr
-#define GSM_PDP_TYPE        "IP"
+#define SIM_PIN     "0000"
+#define GSM_APN     "mmsbouygtel.com"
 
 TEL0177 modem;
-
-// ==========================================================================
-// Utilitaires
-// ==========================================================================
-void printResult(const char* label, bool ok) {
-  Serial.print(label);
-  Serial.print("... ");
-  Serial.print(ok ? "OK" : "KO");
-
-  if (!ok) {
-    Serial.print(" | lastError = ");
-    Serial.print((int)modem.lastError());
-
-    Serial.print(" | lastResponse = ");
-    Serial.print(modem.lastResponse());
-  }
-
-  Serial.println();
-}
-
-void printNetworkState() {
-  Serial.print("Etat reseau interne : ");
-
-  switch (modem.networkState()) {
-    case NET_DETACHED:
-      Serial.println("NET_DETACHED");
-      break;
-
-    case NET_REGISTERED:
-      Serial.println("NET_REGISTERED");
-      break;
-
-    case NET_DATA_ATTACHED:
-      Serial.println("NET_DATA_ATTACHED");
-      break;
-
-    case NET_DATA_CONNECTED:
-      Serial.println("NET_DATA_CONNECTED");
-      break;
-
-    default:
-      Serial.println("UNKNOWN");
-      break;
-  }
-}
 
 // ==========================================================================
 // SETUP
 // ==========================================================================
 void setup() {
-  Serial.begin(SERIAL_MONITOR_BAUD);
-  Serial1.begin(MODEM_BAUD);
-
+  Serial.begin(115200);
+  Serial2.begin(115200);
   delay(2000);
 
-  Serial.println();
-  Serial.println("========================================");
-  Serial.println("      TEL0177 - NetworkStatus Test");
-  Serial.println("========================================");
-  Serial.println();
+  Serial.println("=== TEL0177 - Network Status ===\n");
 
-  // --------------------------------------------------------------------------
-  // 1. Initialisation modem
-  // --------------------------------------------------------------------------
-  printResult("Init modem", modem.begin(Serial1));
+  // Modem
+  modem.begin(Serial2);
+  Serial.print("Alive  = "); Serial.println(modem.isAlive() ? "oui" : "non");
 
-  if (!modem.isAlive()) {
-    Serial.println();
-    Serial.println("Modem non detecte. Fin du test.");
-    return;
-  }
+  // SIM
+  if (!modem.isSIMReady()) modem.simUnlock(SIM_PIN);
+  Serial.print("SIM    = "); Serial.println(modem.isSIMReady() ? "prete" : "KO");
 
-  printResult("Modem alive", true);
+  // Réseau
+  modem.waitForNetwork(30000);
 
-  // --------------------------------------------------------------------------
-  // 2. SIM
-  // --------------------------------------------------------------------------
-  Serial.println();
-  Serial.println("---------- SIM ----------");
+  int rssi = 0, ber = 0;
+  modem.getSignalQuality(rssi, ber);
+  Serial.print("RSSI   = "); Serial.println(rssi);
 
-  bool simReady = modem.isSIMReady();
-  printResult("SIM prete", simReady);
+  char oper[64] = {0};
+  modem.getOperator(oper, sizeof(oper));
+  Serial.print("Oper.  = "); Serial.println(oper);
 
-  if (!simReady) {
-    printResult("Deverrouillage SIM", modem.simUnlock(SIM_PIN));
-  }
+  // Data
+  modem.networkConnect(GSM_APN);
+  Serial.print("IP     = "); Serial.println(modem.ipAddress());
+  Serial.print("Data   = "); Serial.println(modem.isDataConnected() ? "connecte" : "KO");
 
-  // --------------------------------------------------------------------------
-  // 3. Enregistrement reseau
-  // --------------------------------------------------------------------------
-  Serial.println();
-  Serial.println("---------- RESEAU ----------");
+  // Infos module
+  char imei[32] = {0};
+  modem.getIMEI(imei, sizeof(imei));
+  Serial.print("IMEI   = "); Serial.println(imei);
 
-  printResult("Attente reseau", modem.waitForNetwork(30000));
+  char model[32] = {0};
+  modem.getModel(model, sizeof(model));
+  Serial.print("Model  = "); Serial.println(model);
 
-  printResult("Enregistrement CREG", modem.isNetworkRegistered());
-  printResult("Enregistrement CGREG", modem.isDataNetworkRegistered());
-  printResult("Enregistrement CEREG", modem.isLTERegistered());
+  char fw[200] = {0};
+  modem.getFirmware(fw, sizeof(fw));
+  Serial.print("FW     = "); Serial.println(fw);
 
-  int rssi = 0;
-  int ber = 0;
-
-  if (modem.getSignalQuality(rssi, ber)) {
-    Serial.print("RSSI = ");
-    Serial.println(rssi);
-
-    Serial.print("BER  = ");
-    Serial.println(ber);
-  } else {
-    Serial.print("Signal KO | lastError = ");
-    Serial.print((int)modem.lastError());
-    Serial.print(" | lastResponse = ");
-    Serial.println(modem.lastResponse());
-  }
-
-  char operatorName[64] = {0};
-
-  if (modem.getOperator(operatorName, sizeof(operatorName))) {
-    Serial.print("Operateur = ");
-    Serial.println(operatorName);
-  } else {
-    Serial.print("Operateur KO | lastError = ");
-    Serial.print((int)modem.lastError());
-    Serial.print(" | lastResponse = ");
-    Serial.println(modem.lastResponse());
-  }
-
-  printNetworkState();
-
-  // --------------------------------------------------------------------------
-  // 4. Connexion data APN / PDP / IP
-  // --------------------------------------------------------------------------
-  Serial.println();
-  Serial.println("---------- DATA ----------");
-
-  printResult(
-    "Connexion data",
-    modem.networkConnect(GSM_APN, GSM_USER, GSM_PASS, GSM_PDP_TYPE)
-  );
-
-  printResult("Data attachee CGATT", modem.isDataAttached());
-  printResult("Contexte PDP actif CGACT", modem.isDataConnected());
-
-  char ip[32] = {0};
-
-  if (modem.getIPAddress(ip, sizeof(ip))) {
-    Serial.print("Adresse IP = ");
-    Serial.println(ip);
-  } else {
-    Serial.print("Adresse IP KO | lastError = ");
-    Serial.print((int)modem.lastError());
-    Serial.print(" | lastResponse = ");
-    Serial.println(modem.lastResponse());
-  }
-
-  Serial.print("IP memorisee = ");
-  Serial.println(modem.ipAddress());
-
-  Serial.print("APN memorise = ");
-  Serial.println(modem.apn());
-
-  Serial.print("Type PDP memorise = ");
-  Serial.println(modem.pdpType());
-
-  printNetworkState();
-
-  Serial.println();
-  Serial.println("========================================");
-  Serial.println("           Test termine");
-  Serial.println("========================================");
+  Serial.println("\n=== Fin ===");
 }
 
 // ==========================================================================
