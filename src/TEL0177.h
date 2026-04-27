@@ -70,6 +70,12 @@ private:
     void loop();
 
     /**
+     * @brief Traite les événements MQTT pendant une durée donnée.
+     * @param durationMs Durée en millisecondes.
+     */
+    void loopFor(uint32_t durationMs);
+
+    /**
      * @brief Redémarre le module par commande AT si supportée.
      * @return true si le reset réussit, false sinon.
      */

@@ -102,6 +102,13 @@ void TEL0177::loop() {
 /**
  * 
  */
+void TEL0177::loopFor(uint32_t durationMs) {
+    this->_mqtt.loopFor(durationMs);
+}
+
+/**
+ * 
+ */
 bool TEL0177::reset() {
     TEL_Status s = this->_at.send(TEL_RESET_COMMAND, TEL_TIMEOUT_NETWORK);
 
