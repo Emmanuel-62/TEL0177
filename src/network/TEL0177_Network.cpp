@@ -26,69 +26,107 @@ void TEL0177_Network::begin(TEL0177_AT_Core& at){
  * 
  */
 TEL_Status TEL0177_Network::isSIMReady() {
-  if(!this->_at) return TEL_INVALID_PARAM;
+  if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CPIN?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CPIN?",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
 
-  if(s != TEL_OK) {
+  if (s != TEL_OK) {
     this->_simReady = false;
     return s;
   }
 
-  if(strstr(buffer, "+CPIN: READY") || strstr(buffer, "READY")) {
+  if (strstr(buffer, "+CPIN: READY")) {
     this->_simReady = true;
     return TEL_OK;
   }
 
   this->_simReady = false;
 
-  if(strstr(buffer, "+CME ERROR")) {
-    return TEL_ERROR;
-  }
-
-  if(strstr(buffer, "SIM PIN")) {
+  if (strstr(buffer, "SIM PIN")) {
     return TEL_NOT_READY;
   }
 
-  return TEL_ERROR;
+  if (strstr(buffer, "+CME ERROR") ||
+      strstr(buffer, "NOT READY") ||
+      strstr(buffer, "BUSY")) {
+    return TEL_NOT_READY;
+  }
+
+  return TEL_PARSE_ERROR;
 }
 
 /**
  * 
  */
 TEL_Status TEL0177_Network::unlockSIM(const char* pin) {
-  if(!this->_at || !pin || pin[0] == '\0') return TEL_INVALID_PARAM;
-
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
-
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CPIN?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
-  if(s != TEL_OK) return s;
-
-  if(strstr(buffer, "+CPIN: READY") || strstr(buffer, "READY")) {
-    this->_simReady = true;
-    return TEL_OK;
+  if (!this->_at || !pin || pin[0] == '\0') {
+    return TEL_INVALID_PARAM;
   }
 
-  if(strstr(buffer, "SIM PIN")) {
-    char command[TEL_CMD_BUFFER_SIZE] = {0};
-    int n = snprintf(command, sizeof(command), "AT+CPIN=\"%s\"", pin);
+  uint32_t start = millis();
+  bool pinSent = false;
 
-    if(n < 0 || n >= (int)sizeof(command)) return TEL_BUFFER_OVERFLOW;
+  while (millis() - start < TEL_TIMEOUT_NETWORK) {
+    char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-    s = this->_at->send(command, TEL_TIMEOUT_NETWORK);
-    if(s != TEL_OK) {
-      this->_simReady = false;
-      return s;
+    TEL_Status s = this->_at->sendAndReadRaw(
+      "AT+CPIN?",
+      buffer,
+      sizeof(buffer),
+      TEL_TIMEOUT_DEFAULT_AT
+    );
+
+    if (s == TEL_OK) {
+      if (strstr(buffer, "+CPIN: READY")) {
+        this->_simReady = true;
+        return TEL_OK;
+      }
+
+      if (strstr(buffer, "SIM PIN")) {
+        if (!pinSent) {
+          char command[TEL_CMD_BUFFER_SIZE] = {0};
+          int n = snprintf(command, sizeof(command), "AT+CPIN=\"%s\"", pin);
+
+          if (n < 0 || n >= (int)sizeof(command)) {
+            return TEL_BUFFER_OVERFLOW;
+          }
+
+          s = this->_at->send(command, TEL_TIMEOUT_DEFAULT_AT);
+          if (s != TEL_OK) {
+            this->_simReady = false;
+            return s;
+          }
+
+          pinSent = true;
+          delay(TEL_SIM_UNLOCK_DELAY_MS);
+        } else {
+          delay(TEL_RETRY_DELAY_MS);
+        }
+
+        continue;
+      }
+
+      if (strstr(buffer, "+CME ERROR") ||
+          strstr(buffer, "NOT READY") ||
+          strstr(buffer, "BUSY")) {
+        this->_simReady = false;
+        delay(TEL_RETRY_DELAY_MS);
+        continue;
+      }
     }
 
-    delay(TEL_SIM_UNLOCK_DELAY_MS);
-    return this->isSIMReady();
+    delay(TEL_RETRY_DELAY_MS);
   }
 
   this->_simReady = false;
-  return TEL_ERROR;
+  return TEL_TIMEOUT;
 }
 
 /**
@@ -97,9 +135,14 @@ TEL_Status TEL0177_Network::unlockSIM(const char* pin) {
 TEL_Status TEL0177_Network::isNetworkRegistered() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CREG?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CREG?",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
   if (s != TEL_OK) {
     this->_state = NET_DETACHED;
     this->_networkReady = false;
@@ -139,9 +182,14 @@ TEL_Status TEL0177_Network::isNetworkRegistered() {
 TEL_Status TEL0177_Network::isDataNetworkRegistered(){
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CGREG?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CGREG?",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
   if (s != TEL_OK) {
     return s;
   }
@@ -173,9 +221,14 @@ TEL_Status TEL0177_Network::isDataNetworkRegistered(){
 TEL_Status TEL0177_Network::isLTERegistered(){
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CEREG?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CEREG?",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
   if (s != TEL_OK) {
     return s;
   }
@@ -210,11 +263,14 @@ TEL_Status TEL0177_Network::_waitForNetworkReg(uint32_t timeout) {
   uint32_t start = millis();
 
   while (millis() - start < timeout) {
-    TEL_Status s = this->isNetworkRegistered();
+    TEL_Status s1 = this->isLTERegistered();
+    if (s1 == TEL_OK) return TEL_OK;
 
-    if (s == TEL_OK) {
-      return TEL_OK;
-    }
+    TEL_Status s2 = this->isDataNetworkRegistered();
+    if (s2 == TEL_OK) return TEL_OK;
+
+    TEL_Status s3 = this->isNetworkRegistered();
+    if (s3 == TEL_OK) return TEL_OK;
 
     delay(TEL_RETRY_DELAY_MS);
   }
@@ -237,9 +293,14 @@ TEL_Status TEL0177_Network::waitForNetwork(uint32_t timeout) {
 TEL_Status TEL0177_Network::getSignalQuality(int& rssi, int& ber) {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CSQ", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CSQ",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
   if (s != TEL_OK) return s;
 
   char* p = strstr(buffer, "+CSQ:");
@@ -264,9 +325,14 @@ TEL_Status TEL0177_Network::getSignalQuality(int& rssi, int& ber) {
 TEL_Status TEL0177_Network::isDataAttached() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
-  TEL_Status s = this->_at->sendAndReadRaw("AT+CGATT?", buffer, sizeof(buffer), TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+CGATT?",
+    buffer,
+    sizeof(buffer),
+    TEL_TIMEOUT_DEFAULT_AT
+  );
   if (s != TEL_OK) {
     this->_dataReady = false;
     return s;
@@ -298,8 +364,13 @@ TEL_Status TEL0177_Network::isDataAttached() {
 TEL_Status TEL0177_Network::attachData() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  TEL_Status s = this->_at->send("AT+CGATT=1", TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->isDataAttached();
+  if (s == TEL_OK) {
+    this->_state = NET_DATA_ATTACHED;
+    return TEL_OK;
+  }
 
+  s = this->_at->send("AT+CGATT=1", TEL_TIMEOUT_NETWORK);
   if (s != TEL_OK) {
     this->_dataReady = false;
     if (this->_networkReady) this->_state = NET_REGISTERED;
@@ -307,7 +378,6 @@ TEL_Status TEL0177_Network::attachData() {
   }
 
   s = this->isDataAttached();
-
   if (s == TEL_OK) {
     this->_state = NET_DATA_ATTACHED;
   }
@@ -411,6 +481,13 @@ TEL_Status TEL0177_Network::_configureAuth(const char* user, const char* pass) {
 TEL_Status TEL0177_Network::activateDataContext() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
+  TEL_Status s = this->isDataConnected();
+  if (s == TEL_OK) {
+    this->_dataReady = true;
+    this->_state = NET_DATA_CONNECTED;
+    return TEL_OK;
+  }
+
   char command[TEL_CMD_BUFFER_SIZE] = {0};
 
   int n = snprintf(
@@ -424,7 +501,7 @@ TEL_Status TEL0177_Network::activateDataContext() {
     return TEL_BUFFER_OVERFLOW;
   }
 
-  TEL_Status s = this->_at->send(command, TEL_TIMEOUT_NETWORK);
+  s = this->_at->send(command, TEL_TIMEOUT_NETWORK);
   if (s != TEL_OK) {
     this->_dataReady = false;
     return s;
@@ -436,13 +513,13 @@ TEL_Status TEL0177_Network::activateDataContext() {
 TEL_Status TEL0177_Network::isDataConnected() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  char buffer[TEL_LINE_BUFFER_SIZE] = {0};
+  char buffer[TEL_RX_BUFFER_SIZE] = {0};
 
   TEL_Status s = this->_at->sendAndReadRaw(
     "AT+CGACT?",
     buffer,
     sizeof(buffer),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) {
@@ -482,12 +559,14 @@ TEL_Status TEL0177_Network::isDataConnected() {
   return TEL_NOT_CONNECTED;
 }
 
+/**
+ * 
+ */
 TEL_Status TEL0177_Network::getIPAddress(char* buffer, uint16_t size) {
   if (!this->_at || !buffer || size == 0) {
     return TEL_INVALID_PARAM;
   }
 
-  char response[TEL_LINE_BUFFER_SIZE] = {0};
   char command[TEL_CMD_BUFFER_SIZE] = {0};
 
   int n = snprintf(
@@ -501,40 +580,92 @@ TEL_Status TEL0177_Network::getIPAddress(char* buffer, uint16_t size) {
     return TEL_BUFFER_OVERFLOW;
   }
 
-  TEL_Status s = this->_at->sendAndReadRaw(
-    command,
-    response,
-    sizeof(response),
-    TEL_TIMEOUT_NETWORK
-  );
+  for (uint8_t attempt = 0; attempt < (TEL_MAX_RETRIES + 3); attempt++) {
+    char response[TEL_RX_BUFFER_SIZE] = {0};
 
-  if (s != TEL_OK) return s;
+    TEL_Status s = this->_at->sendAndReadRaw(
+      command,
+      response,
+      sizeof(response),
+      TEL_TIMEOUT_DEFAULT_AT
+    );
 
-  const char* p = strstr(response, "+CGPADDR:");
-  if (!p) return TEL_PARSE_ERROR;
+    if (s != TEL_OK) {
+      delay(TEL_RETRY_DELAY_MS);
+      continue;
+    }
 
-  const char* firstQuote = strchr(p, '"');
-  const char* secondQuote = firstQuote ? strchr(firstQuote + 1, '"') : nullptr;
+    const char* p = strstr(response, "+CGPADDR:");
+    if (!p) {
+      delay(TEL_RETRY_DELAY_MS);
+      continue;
+    }
 
-  if (!firstQuote || !secondQuote || secondQuote <= firstQuote + 1) {
-    return TEL_PARSE_ERROR;
-  }
+    const char* comma = strchr(p, ',');
+    if (!comma) {
+      delay(TEL_RETRY_DELAY_MS);
+      continue;
+    }
 
-  uint16_t ipLen = (uint16_t)(secondQuote - firstQuote - 1);
+    const char* ipStart = comma + 1;
+    while (*ipStart == ' ') ipStart++;
 
-  if (ipLen >= size) {
-    return TEL_BUFFER_OVERFLOW;
+    char ipTemp[TEL_IP_SIZE] = {0};
+
+    if (*ipStart == '"') {
+      ipStart++;
+      const char* ipEnd = strchr(ipStart, '"');
+      if (!ipEnd || ipEnd <= ipStart) {
+        delay(TEL_RETRY_DELAY_MS);
+        continue;
+      }
+
+      uint16_t ipLen = (uint16_t)(ipEnd - ipStart);
+      if (ipLen >= sizeof(ipTemp) || ipLen >= size) {
+        return TEL_BUFFER_OVERFLOW;
+      }
+
+      strncpy(ipTemp, ipStart, ipLen);
+      ipTemp[ipLen] = '\0';
+    } else {
+      const char* ipEnd = ipStart;
+      while (*ipEnd && *ipEnd != '\r' && *ipEnd != '\n' && *ipEnd != ',') {
+        ipEnd++;
+      }
+
+      if (ipEnd <= ipStart) {
+        delay(TEL_RETRY_DELAY_MS);
+        continue;
+      }
+
+      uint16_t ipLen = (uint16_t)(ipEnd - ipStart);
+      if (ipLen >= sizeof(ipTemp) || ipLen >= size) {
+        return TEL_BUFFER_OVERFLOW;
+      }
+
+      strncpy(ipTemp, ipStart, ipLen);
+      ipTemp[ipLen] = '\0';
+    }
+
+    if (ipTemp[0] == '\0' || strcmp(ipTemp, "0.0.0.0") == 0) {
+      delay(TEL_RETRY_DELAY_MS);
+      continue;
+    }
+
+    memset(buffer, 0, size);
+    strncpy(buffer, ipTemp, size - 1);
+    buffer[size - 1] = '\0';
+
+    memset(this->_ip, 0, sizeof(this->_ip));
+    strncpy(this->_ip, ipTemp, sizeof(this->_ip) - 1);
+    this->_ip[sizeof(this->_ip) - 1] = '\0';
+
+    return TEL_OK;
   }
 
   memset(buffer, 0, size);
-  strncpy(buffer, firstQuote + 1, ipLen);
-  buffer[ipLen] = '\0';
-
   memset(this->_ip, 0, sizeof(this->_ip));
-  strncpy(this->_ip, buffer, sizeof(this->_ip) - 1);
-  this->_ip[sizeof(this->_ip) - 1] = '\0';
-
-  return TEL_OK;
+  return TEL_NOT_READY;
 }
 
 /**
@@ -550,9 +681,10 @@ TEL_Status TEL0177_Network::connectData(
     return TEL_INVALID_PARAM;
   }
 
-  TEL_Status s = TEL_OK;
+  this->_dataReady = false;
+  memset(this->_ip, 0, sizeof(this->_ip));
 
-  s = this->waitForNetwork(TEL_TIMEOUT_NETWORK);
+  TEL_Status s = this->waitForNetwork(TEL_TIMEOUT_NETWORK);
   if (s != TEL_OK) {
     this->_networkReady = false;
     this->_dataReady = false;
@@ -584,17 +716,26 @@ TEL_Status TEL0177_Network::connectData(
     this->_dataReady = false;
     return s;
   }
+  delay(500);
 
   s = this->isDataConnected();
   if (s != TEL_OK) {
     this->_dataReady = false;
     return s;
   }
+  delay(500);
 
-  s = this->getIPAddress(this->_ip, sizeof(this->_ip));
+  char ipBuffer[TEL_IP_SIZE] = {0};
+  s = this->getIPAddress(ipBuffer, sizeof(ipBuffer));
   if (s != TEL_OK) {
     this->_dataReady = false;
     return s;
+  }
+
+  if (ipBuffer[0] == '\0') {
+    this->_dataReady = false;
+    memset(this->_ip, 0, sizeof(this->_ip));
+    return TEL_NOT_READY;
   }
 
   this->_dataReady = true;
@@ -603,6 +744,9 @@ TEL_Status TEL0177_Network::connectData(
   return TEL_OK;
 }
 
+/**
+ * 
+ */
 TEL_Status TEL0177_Network::deactivateDataContext() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
@@ -769,7 +913,7 @@ TEL_Status TEL0177_Network::getOperator(char* buffer, uint16_t size) {
     "AT+COPS?",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -821,7 +965,7 @@ TEL_Status TEL0177_Network::getIMEI(char* buffer, uint16_t size) {
     "AT+CGSN",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -852,7 +996,7 @@ TEL_Status TEL0177_Network::getICCID(char* buffer, uint16_t size) {
     "AT+CCID",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -892,7 +1036,7 @@ TEL_Status TEL0177_Network::getIMSI(char* buffer, uint16_t size) {
     "AT+CIMI",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -923,7 +1067,7 @@ TEL_Status TEL0177_Network::getManufacturer(char* buffer, uint16_t size) {
     "AT+CGMI",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -954,7 +1098,7 @@ TEL_Status TEL0177_Network::getModel(char* buffer, uint16_t size) {
     "AT+CGMM",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
@@ -985,7 +1129,7 @@ TEL_Status TEL0177_Network::getFirmware(char* buffer, uint16_t size) {
     "AT+CGMR",
     response,
     sizeof(response),
-    TEL_TIMEOUT_NETWORK
+    TEL_TIMEOUT_DEFAULT_AT
   );
 
   if (s != TEL_OK) return s;
