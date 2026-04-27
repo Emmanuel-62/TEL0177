@@ -140,7 +140,7 @@
  * - attachement data
  * - activation PDP
  */
-#define TEL_TIMEOUT_NETWORK 8000UL
+#define TEL_TIMEOUT_NETWORK 4000UL
 
 /**
  * @brief Timeout pour les opérations HTTP.
