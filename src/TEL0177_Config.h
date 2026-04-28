@@ -74,9 +74,8 @@
  *
  * Peut être redéfinie si un firmware préfère une autre commande.
  */
-#ifndef TEL_RESET_COMMAND
 #define TEL_RESET_COMMAND "AT+RESET"
-#endif
+
 
 
 // ============================================================================
