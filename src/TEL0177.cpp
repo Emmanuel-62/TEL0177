@@ -551,7 +551,7 @@ bool TEL0177::mqttisConnected() {
     this->_lastError = ok ? TEL_OK : TEL_NOT_CONNECTED;
 
     if (!ok) {
-        this->_display("mqttisConnected", this->_lastError);
+        //this->_display("mqttisConnected", this->_lastError);
     }
 
     return ok;
