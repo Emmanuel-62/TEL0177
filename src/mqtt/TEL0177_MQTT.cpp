@@ -200,19 +200,51 @@ TEL_Status TEL0177_MQTT::disconnect(){
 /**
  * 
  */
-bool TEL0177_MQTT::isConnected(){
-  if(!this->_at) return false;
-
-  char res[TEL_LINE_BUFFER_SIZE] = {0};
-  TEL_Status s = this->_at->sendAndReadRaw("AT+MQTTSTATU", res, sizeof(res), TEL_TIMEOUT_MQTT);
-
-  if(s != TEL_OK) {
+bool TEL0177_MQTT::isConnected() {
+  if (!this->_at) {
     this->_connected = false;
     return false;
   }
 
-  this->_connected = strstr(res, "MQTTSTATU :1") != nullptr ||
-                     strstr(res, "MQTTSTATU:1") != nullptr;
+  char res[TEL_LINE_BUFFER_SIZE] = {0};
+
+  TEL_Status s = this->_at->sendAndReadRaw(
+    "AT+MQTTSTATU",
+    res,
+    sizeof(res),
+    TEL_TIMEOUT_MQTT
+  );
+
+  if (s != TEL_OK) {
+    this->_connected = false;
+    return false;
+  }
+
+  char* p = strstr(res, "MQTTSTATU");
+
+  if (!p) {
+    this->_connected = false;
+    return false;
+  }
+
+  char* colon = strchr(p, ':');
+
+  if (!colon) {
+    this->_connected = false;
+    return false;
+  }
+
+  colon++;
+
+  while (*colon == ' ') {
+    colon++;
+  }
+
+  if (*colon == '1') {
+    this->_connected = true;
+  } else {
+    this->_connected = false;
+  }
 
   return this->_connected;
 }
