@@ -783,25 +783,57 @@ TEL_Status TEL0177_Network::deactivateDataContext() {
 TEL_Status TEL0177_Network::disconnectData() {
   if (!this->_at) return TEL_INVALID_PARAM;
 
-  TEL_Status s1 = this->deactivateDataContext();
+  TEL_Status firstError = TEL_OK;
 
-  if (s1 != TEL_OK && s1 != TEL_NOT_CONNECTED) {
-    return s1;
+  TEL_Status sDetach = this->detachData();
+
+  if (sDetach != TEL_OK && sDetach != TEL_NOT_CONNECTED) {
+    firstError = sDetach;
   }
 
-  TEL_Status s2 = this->detachData();
-  if (s2 != TEL_OK && s2 != TEL_NOT_CONNECTED) {
-    return s2;
+  delay(1000);
+
+  TEL_Status sDeactivate = this->deactivateDataContext();
+
+  if (sDeactivate != TEL_OK && sDeactivate != TEL_NOT_CONNECTED) {
+    if (firstError == TEL_OK) {
+      firstError = sDeactivate;
+    }
+  }
+
+  delay(500);
+
+  TEL_Status sAttached = this->isDataAttached();
+
+  if (sAttached == TEL_OK) {
+    this->_dataReady = true;
+    this->_state = NET_DATA_ATTACHED;
+
+    if (firstError != TEL_OK) {
+      return firstError;
+    }
+
+    return TEL_ERROR;
+  }
+
+  TEL_Status sConnected = this->isDataConnected();
+
+  if (sConnected == TEL_OK) {
+    this->_dataReady = true;
+    this->_state = NET_DATA_CONNECTED;
+
+    if (firstError != TEL_OK) {
+      return firstError;
+    }
+
+    return TEL_ERROR;
   }
 
   this->_dataReady = false;
   memset(this->_ip, 0, sizeof(this->_ip));
 
-  if (this->_networkReady) {
-    this->_state = NET_REGISTERED;
-  } else {
-    this->_state = NET_DETACHED;
-  }
+  this->_networkReady = false;
+  this->_state = NET_DETACHED;
 
   return TEL_OK;
 }
